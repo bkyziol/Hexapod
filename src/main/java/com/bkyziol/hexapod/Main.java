@@ -1,36 +1,33 @@
 package com.bkyziol.hexapod;
 
-import com.amazonaws.services.iot.client.AWSIotException;
-import com.amazonaws.services.iot.client.AWSIotMqttClient;
-import com.amazonaws.services.iot.client.AWSIotQos;
-import com.bkyziol.hexapod.mqtt.AppToHexapodTopic;
-import com.bkyziol.hexapod.mqtt.AwsIotUtil;
-import com.bkyziol.hexapod.mqtt.AwsIotUtil.KeyStorePasswordPair;
+import com.bkyziol.hexapod.camera.Camera;
 
-import static com.bkyziol.hexapod.utils.Constants.*;
-
-import java.util.UUID;
+import com.bkyziol.hexapod.mqtt.Connection;
+import static com.bkyziol.hexapod.utils.Constants.BUGSNAG;
 
 public class Main {
 
-	private static final String HEXAPOD_TO_APP_TOPIC = "HEXAPOD_TO_APP";
-	private static final String APP_TO_HEXAPOD_TOPIC = "APP_TO_HEXAPOD";
+	private static Boolean running = true;
 
-	public static void main(String[] args) {
-		try {
-			String clientEndpoint = CLIENT_ENDPOINT;
-			String certificateFile = CERTIFICATE_FILE;
-			String privateKeyFile = PRIVATE_KEY_FILE;
-			String clientId = UUID.randomUUID().toString();
-			KeyStorePasswordPair pair = AwsIotUtil.getKeyStorePasswordPair(certificateFile, privateKeyFile);
-			AWSIotMqttClient client = new AWSIotMqttClient(clientEndpoint, clientId, pair.keyStore, pair.keyPassword);
-			client.connect();
-			AWSIotQos qos = AWSIotQos.QOS0;
-			AppToHexapodTopic topic = new AppToHexapodTopic(HEXAPOD_TO_APP_TOPIC, qos);
-			client.subscribe(topic);
-		} catch (AWSIotException e) {
-			BUGSNAG.notify(e);
-			System.out.println(e);
+	public static void main(String[] args) throws InterruptedException {
+		while (running) {
+			Camera camera = new Camera();
+			Connection connection = new Connection();
+			try {
+				connection.start();
+				camera.start();
+				while (true) {
+					Thread.sleep(1000);
+					int nrFrames = camera.getNumberOfFrames();
+					System.out.println(nrFrames);
+					connection.publish(String.valueOf(nrFrames));
+				}
+			} catch (Throwable e) {
+				System.out.println("Problem occurred: " + e.getMessage());
+				System.out.println("The device will restart");
+				BUGSNAG.notify(e);
+				Thread.sleep(5_000);
+			}
 		}
 	}
 }

@@ -4,6 +4,8 @@ import static com.bkyziol.hexapod.utils.Constants.CERTIFICATE_FILE;
 import static com.bkyziol.hexapod.utils.Constants.CLIENT_ENDPOINT;
 import static com.bkyziol.hexapod.utils.Constants.PRIVATE_KEY_FILE;
 import static org.junit.Assert.*;
+
+import java.io.InputStream;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -18,19 +20,20 @@ import com.bkyziol.hexapod.mqtt.AwsIotUtil.KeyStorePasswordPair;
 
 public class MqttConnectionTest {
 
-	private static AWSIotMqttClient client;
+	private static String clientId;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-
-		String clientId = UUID.randomUUID().toString();
-		KeyStorePasswordPair pair = AwsIotUtil.getKeyStorePasswordPair(CERTIFICATE_FILE, PRIVATE_KEY_FILE);
-		client = new AWSIotMqttClient(CLIENT_ENDPOINT, clientId, pair.keyStore, pair.keyPassword);
-		client.connect();
+		clientId = UUID.randomUUID().toString();
 	}
 
 	@Test
 	public void test() throws Exception {
+		InputStream certificateInputStream = getClass().getResourceAsStream(CERTIFICATE_FILE);
+		InputStream privateKeyInputStream = getClass().getResourceAsStream(PRIVATE_KEY_FILE);
+		KeyStorePasswordPair pair = AwsIotUtil.getKeyStorePasswordPair(certificateInputStream, privateKeyInputStream);
+		AWSIotMqttClient client = new AWSIotMqttClient(CLIENT_ENDPOINT, clientId, pair.keyStore, pair.keyPassword);
+		client.connect();
 		final CompletableFuture<String> future = new CompletableFuture<>();
 		AWSIotMessage message = new AWSIotMessage("TEST_TOPIC", AWSIotQos.QOS1, "TEST_PAYLOAD") {
 			@Override

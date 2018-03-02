@@ -20,6 +20,7 @@ import java.io.DataInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyStore;
@@ -47,14 +48,12 @@ public class AwsIotUtil {
 		}
 	}
 
-	public static KeyStorePasswordPair getKeyStorePasswordPair(final String certificateFile,
-			final String privateKeyFile) {
+	public static KeyStorePasswordPair getKeyStorePasswordPair(final InputStream certificateFile,
+			final InputStream privateKeyFile) {
 		if (certificateFile == null || privateKeyFile == null) {
 			System.out.println("Certificate or private key file missing");
 			return null;
 		}
-		System.out.println("Cert file:" + certificateFile + " Private key: " + privateKeyFile);
-
 		final PrivateKey privateKey = loadPrivateKeyFromFile(privateKeyFile);
 
 		final List<Certificate> certChain = loadCertificatesFromFile(certificateFile);
@@ -87,34 +86,24 @@ public class AwsIotUtil {
 		return new KeyStorePasswordPair(keyStore, keyPassword);
 	}
 
-	private static List<Certificate> loadCertificatesFromFile(final String filename) {
-		File file = new File(filename);
-		if (!file.exists()) {
-			System.out.println("Certificate file: " + filename + " is not found.");
-			return null;
-		}
+	private static List<Certificate> loadCertificatesFromFile(final InputStream inputStream) {
 
-		try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(file))) {
+		try (BufferedInputStream stream = new BufferedInputStream(inputStream)) {
 			final CertificateFactory certFactory = CertificateFactory.getInstance("X.509");
 			return (List<Certificate>) certFactory.generateCertificates(stream);
 		} catch (IOException | CertificateException e) {
-			System.out.println("Failed to load certificate file " + filename);
+			System.out.println("Failed to load certificate");
 		}
 		return null;
 	}
 
-	private static PrivateKey loadPrivateKeyFromFile(final String filename) {
+	private static PrivateKey loadPrivateKeyFromFile(final InputStream inputStream) {
 		PrivateKey privateKey = null;
 
-		File file = new File(filename);
-		if (!file.exists()) {
-			System.out.println("Private key file not found: " + filename);
-			return null;
-		}
-		try (DataInputStream stream = new DataInputStream(new FileInputStream(file))) {
+		try (DataInputStream stream = new DataInputStream(inputStream)) {
 			privateKey = PrivateKeyReader.getPrivateKey(stream);
 		} catch (IOException | GeneralSecurityException e) {
-			System.out.println("Failed to load private key from file " + filename);
+			System.out.println("Failed to load private key");
 		}
 
 		return privateKey;
