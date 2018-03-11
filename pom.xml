@@ -34,17 +34,18 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.github.sarxos</groupId>
-			<artifactId>webcam-capture</artifactId>
-			<version>0.3.12</version>
-		</dependency>
-		<dependency>
-			<groupId>com.github.sarxos</groupId>
-			<artifactId>webcam-capture-driver-v4l4j</artifactId>
-			<version>0.3.12</version>
+			<groupId>org.opencv</groupId>
+			<artifactId>opencv</artifactId>
+			<version>RELEASE</version>
 		</dependency>
 	</dependencies>
 	<build>
+		<resources>
+			<resource>
+				<directory>src/main/resources</directory>
+				<filtering>true</filtering>
+			</resource>
+		</resources>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -81,6 +82,109 @@
 					</execution>
 				</executions>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-install-plugin</artifactId>
+				<version>2.5.2</version>
+				<executions>
+					<execution>
+						<phase>initialize</phase>
+						<goals>
+							<goal>install-file</goal>
+						</goals>
+						<configuration>
+							<groupId>org.opencv</groupId>
+							<artifactId>opencv</artifactId>
+							<version>1.0</version>
+							<packaging>jar</packaging>
+							<file>${basedir}/lib/${opencv.jar}</file>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.eclipse.m2e</groupId>
+					<artifactId>lifecycle-mapping</artifactId>
+					<version>1.0.0</version>
+					<configuration>
+						<lifecycleMappingMetadata>
+							<pluginExecutions>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>org.codehaus.mojo</groupId>
+										<artifactId>aspectj-maven-plugin</artifactId>
+										<versionRange>[1.0,)</versionRange>
+										<goals>
+											<goal>test-compile</goal>
+											<goal>compile</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<execute />
+									</action>
+								</pluginExecution>
+								<pluginExecution>
+									<pluginExecutionFilter>
+										<groupId>
+											org.apache.maven.plugins
+										</groupId>
+										<artifactId>
+											maven-install-plugin
+										</artifactId>
+										<versionRange>
+											[2.5,)
+										</versionRange>
+										<goals>
+											<goal>install-file</goal>
+										</goals>
+									</pluginExecutionFilter>
+									<action>
+										<execute>
+											<runOnIncremental>false</runOnIncremental>
+										</execute>
+									</action>
+								</pluginExecution>
+							</pluginExecutions>
+						</lifecycleMappingMetadata>
+					</configuration>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 	</build>
+	<profiles>
+		<profile>
+			<activation>
+				<activeByDefault>true</activeByDefault>
+			</activation>
+			<id>development</id>
+			<properties>
+				<opencv.jar>opencv-341-mac.jar</opencv.jar>
+				<frame.height>720</frame.height>
+				<frame.width>1280</frame.width>
+				<libopencv.file>/usr/local/Cellar/opencv/3.4.1_2/share/OpenCV/java/libopencv_java341.dylib</libopencv.file>
+				<privateKey.file>4be29016ee-private.pem.key</privateKey.file>
+				<certificate.file>4be29016ee-certificate.pem.crt</certificate.file>
+				<client.endpoint>a1pasyph6h7pts.iot.eu-west-1.amazonaws.com</client.endpoint>
+				<bugsnag.id>1321897d841fb7d901a7313b117c1211</bugsnag.id>
+				<haarcascades.path>${basedir}/resources/haarcascades</haarcascades.path>
+			</properties>
+		</profile>
+		<profile>
+			<id>production</id>
+			<properties>
+				<opencv.jar>opencv-341-raspberry.jar</opencv.jar>
+				<frame.height>480</frame.height>
+				<frame.width>640</frame.width>
+				<libopencv.file>/home/pi/opencv/build/lib/libopencv_java341.so</libopencv.file>
+				<privateKey.file>4be29016ee-private.pem.key</privateKey.file>
+				<certificate.file>4be29016ee-certificate.pem.crt</certificate.file>
+				<client.endpoint>a1pasyph6h7pts.iot.eu-west-1.amazonaws.com</client.endpoint>
+				<bugsnag.id>1321897d841fb7d901a7313b117c1211</bugsnag.id>
+				<haarcascades.path>/home/pi/haarcascades</haarcascades.path>
+			</properties>
+		</profile>
+	</profiles>
 </project>

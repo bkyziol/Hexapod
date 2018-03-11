@@ -1,33 +1,29 @@
 package com.bkyziol.hexapod;
 
-import com.bkyziol.hexapod.camera.Camera;
+import com.bkyziol.hexapod.camera.HexapodCamera;
+import com.bkyziol.hexapod.mqtt.HexapodConnection;
 
-import com.bkyziol.hexapod.mqtt.Connection;
-import static com.bkyziol.hexapod.utils.Constants.BUGSNAG;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Main {
 
-	private static Boolean running = true;
-
 	public static void main(String[] args) throws InterruptedException {
-		while (running) {
-			Camera camera = new Camera();
-			Connection connection = new Connection();
-			try {
-				connection.start();
-				camera.start();
-				while (true) {
-					Thread.sleep(1000);
-					int nrFrames = camera.getNumberOfFrames();
-					System.out.println(nrFrames);
-					connection.publish(String.valueOf(nrFrames));
-				}
-			} catch (Throwable e) {
-				System.out.println("Problem occurred: " + e.getMessage());
-				System.out.println("The device will restart");
-				BUGSNAG.notify(e);
-				Thread.sleep(5_000);
+		HexapodConnection connection = new HexapodConnection();
+		HexapodCamera camera = new HexapodCamera(connection);
+		connection.connect();
+		camera.open();
+		Thread.sleep(2000);
+		camera.startCapturing();
+		Runnable frameSender = new Runnable() {
+			@Override
+			public void run() {
+//				camera.captureAndSend();
+				camera.sendFrame();
 			}
-		}
+		};
+		ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
+		timer.scheduleAtFixedRate(frameSender, 0, 250, TimeUnit.MILLISECONDS);
 	}
 }
