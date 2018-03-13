@@ -165,8 +165,8 @@
 				<frame.height>720</frame.height>
 				<frame.width>1280</frame.width>
 				<libopencv.file>/usr/local/Cellar/opencv/3.4.1_2/share/OpenCV/java/libopencv_java341.dylib</libopencv.file>
-				<privateKey.file>4be29016ee-private.pem.key</privateKey.file>
-				<certificate.file>4be29016ee-certificate.pem.crt</certificate.file>
+				<privateKey.file>${basedir}/resources/4be29016ee-private.pem.key</privateKey.file>
+				<certificate.file>${basedir}/resources/4be29016ee-certificate.pem.crt</certificate.file>
 				<client.endpoint>a1pasyph6h7pts.iot.eu-west-1.amazonaws.com</client.endpoint>
 				<bugsnag.id>1321897d841fb7d901a7313b117c1211</bugsnag.id>
 				<haarcascades.path>${basedir}/resources/haarcascades</haarcascades.path>

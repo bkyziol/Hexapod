@@ -29,9 +29,7 @@ public class MqttConnectionTest {
 
 	@Test
 	public void test() throws Exception {
-		InputStream certificateInputStream = getClass().getResourceAsStream("/" + CERTIFICATE_FILE);
-		InputStream privateKeyInputStream = getClass().getResourceAsStream("/" + PRIVATE_KEY_FILE);
-		KeyStorePasswordPair pair = AwsIotUtil.getKeyStorePasswordPair(certificateInputStream, privateKeyInputStream);
+		KeyStorePasswordPair pair = AwsIotUtil.getKeyStorePasswordPair(CERTIFICATE_FILE, PRIVATE_KEY_FILE);
 		AWSIotMqttClient client = new AWSIotMqttClient(CLIENT_ENDPOINT, clientId, pair.keyStore, pair.keyPassword);
 		client.connect();
 		final CompletableFuture<String> future = new CompletableFuture<>();
