@@ -10,19 +10,18 @@ import com.bkyziol.hexapod.mqtt.AwsIotUtil.KeyStorePasswordPair;
 import static com.bkyziol.hexapod.utils.Constants.*;
 
 public final class HexapodConnection {
-	private static final Topic statusTopic = new Topic(TopicName.STATUS.getName(), AWSIotQos.QOS0);
-	private static final Topic imageTopic = new Topic(TopicName.IMAGE.getName(), AWSIotQos.QOS0);
+	private static final CommandTopic commandTopic = new CommandTopic(TopicName.COMMAND.getName(), AWSIotQos.QOS0);
+	private static final CameraTopic cameraTopic = new CameraTopic(TopicName.CAMERA.getName(), AWSIotQos.QOS0);
 	private static final String CLIENT_ID = UUID.randomUUID().toString();
-	private static final Thread connectionThread  = openConnectionThread();
+	private static final Thread connectionThread  = initConnectionThread();
 	private static final AWSIotMqttClient awsClient;
 
 	static {
 		KeyStorePasswordPair pair = AwsIotUtil.getKeyStorePasswordPair(CERTIFICATE_FILE, PRIVATE_KEY_FILE);
 		awsClient = new AWSIotMqttClient(CLIENT_ENDPOINT, CLIENT_ID, pair.keyStore, pair.keyPassword);
-		connect();
 	}
 
-	private static synchronized void connect() {
+	public static synchronized void connect() {
 		if (!connectionThread.isAlive()) {
 			connectionThread.start();
 		}
@@ -44,8 +43,7 @@ public final class HexapodConnection {
 		}
 		if (awsClient.getConnectionStatus().equals(AWSIotConnectionStatus.CONNECTED)) {
 			try {
-				awsClient.publish(TopicName.IMAGE.getName(), payload);
-				System.out.println("Image send: " + System.currentTimeMillis());
+				awsClient.publish(TopicName.CAMERA.getName(), payload);
 			} catch (AWSIotException e) {
 				throw new ConnectionRuntimeException("Can't publish message.", e);
 			}
@@ -76,7 +74,7 @@ public final class HexapodConnection {
 		return awsClient.getConnectionStatus().equals(AWSIotConnectionStatus.CONNECTED)? true : false; 
 	}
 
-	private static Thread openConnectionThread() {
+	private static final Thread initConnectionThread() {
 		return new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -84,8 +82,8 @@ public final class HexapodConnection {
 					System.out.println("Connecting with AWS...");
 					try {
 						awsClient.connect(5000, true);
-						awsClient.subscribe(statusTopic);
-						awsClient.subscribe(imageTopic);
+//						awsClient.subscribe(commandTopic);
+						awsClient.subscribe(cameraTopic);
 					} catch (AWSIotException | AWSIotTimeoutException e) {
 						System.out.println("Connection failed, reconnecting!");
 					}

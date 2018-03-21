@@ -1,9 +1,9 @@
 package com.bkyziol.hexapod.mqtt;
 
 public enum TopicName {
-	IMAGE("IMAGE"),
-	STATUS("STATUS"),
-	COMMAND("COMMAND")
+	CAMERA("hexapod/camera"),
+	STATUS("hexapod/status"),
+	COMMAND("hexapod/command")
 	;
 
 	private final String name;

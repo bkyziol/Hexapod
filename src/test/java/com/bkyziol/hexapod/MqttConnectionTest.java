@@ -1,11 +1,8 @@
 package com.bkyziol.hexapod;
 
-import static com.bkyziol.hexapod.utils.Constants.CERTIFICATE_FILE;
 import static com.bkyziol.hexapod.utils.Constants.CLIENT_ENDPOINT;
-import static com.bkyziol.hexapod.utils.Constants.PRIVATE_KEY_FILE;
 import static org.junit.Assert.*;
 
-import java.io.InputStream;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -29,7 +26,11 @@ public class MqttConnectionTest {
 
 	@Test
 	public void test() throws Exception {
-		KeyStorePasswordPair pair = AwsIotUtil.getKeyStorePasswordPair(CERTIFICATE_FILE, PRIVATE_KEY_FILE);
+		System.out.println(System.getProperty("user.dir"));
+		KeyStorePasswordPair pair = AwsIotUtil.getKeyStorePasswordPair(
+				"./resources/4be29016ee-certificate.pem.crt",
+				"./resources/4be29016ee-private.pem.key"
+			);
 		AWSIotMqttClient client = new AWSIotMqttClient(CLIENT_ENDPOINT, clientId, pair.keyStore, pair.keyPassword);
 		client.connect();
 		final CompletableFuture<String> future = new CompletableFuture<>();

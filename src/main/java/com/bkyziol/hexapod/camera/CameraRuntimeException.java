@@ -1,6 +1,6 @@
 package com.bkyziol.hexapod.camera;
 
-public class CameraRuntimeException extends RuntimeException{
+public class CameraRuntimeException extends Exception{
 
 	private static final long serialVersionUID = 1L;
 

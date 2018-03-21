@@ -1,16 +1,9 @@
 package com.bkyziol.hexapod.camera;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.SimpleDateFormat;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import javax.imageio.ImageIO;
 
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -26,13 +19,12 @@ import org.opencv.objdetect.Objdetect;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 
-import com.bkyziol.hexapod.mqtt.ConnectionRuntimeException;
 import com.bkyziol.hexapod.mqtt.HexapodConnection;
 
 
 import static com.bkyziol.hexapod.utils.Constants.*;
 
-public class HexapodCamera {
+public final class HexapodCamera {
 
 	private volatile Mat frame  = new Mat();
 	private volatile int numberOfCapturedFrames = 0;  //TODO REMOVE
@@ -48,7 +40,7 @@ public class HexapodCamera {
 
 	private final boolean needToRotate;
 
-	private final Thread openCameraThread = openCameraThread();
+	private final Thread openCameraThread = initCameraThread();
 
 	static {
 		System.load(new File(OPENCV_LIB_FILE).getAbsolutePath());
@@ -89,51 +81,45 @@ public class HexapodCamera {
 		}
 	}
 
-	public void captureAndSend() throws CameraRuntimeException {
-		long time = System.currentTimeMillis();
-		System.out.println("start: " + System.currentTimeMillis());
+	public void captureAndSendFrame() throws CameraRuntimeException {
 		if (camera != null && camera.isOpened()) {
 			Mat newFrame = new Mat();
 			camera.read(newFrame);
-			System.out.println("camera read: " + System.currentTimeMillis());
 			if (needToRotate) {
 				rotateImage(newFrame);
-				System.out.println("rotate: " + System.currentTimeMillis());
 			}
 			detectFace(newFrame);
-			System.out.println("detect face: " + System.currentTimeMillis());
 			resizeImage(newFrame, 320 ,240);
-			System.out.println("frame resize: " + System.currentTimeMillis());
-			convertToGray(newFrame);
-			System.out.println("gray scale: " + System.currentTimeMillis());
 			numberOfCapturedFrames++;
 			numberOfSentFrames++;
 			MatOfByte mob = new MatOfByte();
 			Imgcodecs.imencode(".jpg", newFrame, mob);
-			System.out.println("jpg codec: " + System.currentTimeMillis());
 			byte[] imageByteArray = mob.toArray();
-//			connection.sendImage(imageByteArray);
-			saveToFile(imageByteArray);
-			System.out.println("summary: " + (System.currentTimeMillis() - time) + " / " + newFrame.size() + " / " + imageByteArray.length);
-			System.out.println();
+			HexapodConnection.sendImage(imageByteArray);
 		} else {
 			System.out.println("Camera is off");
 			throw new CameraRuntimeException("Camera is off");
 		}
 	}
 
-	private void saveToFile(byte[] data) {
-		try {
-			String string = new SimpleDateFormat("HH-mm-ss-SSS").format(System.currentTimeMillis());
-			File outputfile = new File(string + ".jpg");
-			InputStream in = new ByteArrayInputStream(data);
-			BufferedImage bufferedImage = ImageIO.read(in);
-			ImageIO.write(bufferedImage, "jpg", outputfile);
-		} catch (IOException e) {
-			System.out.println("save to file: error");
-		}
-		System.out.println("save to file: " + System.currentTimeMillis());
-	}
+//	private void saveToFile(byte[] data) {
+//		try {
+//			String string = new SimpleDateFormat("HH-mm-ss-SSS").format(System.currentTimeMillis());
+//			File outputfile = new File(string + ".jpg");
+//			InputStream in = new ByteArrayInputStream(data);
+//			BufferedImage bufferedImage = ImageIO.read(in);
+//			ImageIO.write(bufferedImage, "jpg", outputfile);
+//		} catch (IOException e) {
+//			System.out.println("save to file: error");
+//		}
+//		System.out.println("save to file: " + System.currentTimeMillis());
+//	}
+
+//	private void saveToFile(Mat frame) {
+//		String string = new SimpleDateFormat("HH-mm-ss-SSS").format(System.currentTimeMillis());
+//		Imgcodecs.imwrite(string + ".jpg", frame);
+//		System.out.println("save to file: " + System.currentTimeMillis());
+//	}
 
 	public void changeFrameSize(int frameWidth, int frameHeight) {
 		this.frameWidth = frameWidth;
@@ -153,15 +139,8 @@ public class HexapodCamera {
 	}
 
 	private Mat resizeImage(Mat frame, int newWidth, int newHeigth) {
-		System.out.print("old size: " + frame.size());
 		Size size = new Size(newWidth, newHeigth);
 		Imgproc.resize(frame, frame, size);
-		System.out.println(" new size: " + frame.size());
-		return frame;
-	}
-
-	private Mat convertToGray(Mat frame) {
-		Imgproc.cvtColor(frame, frame, Imgproc.COLOR_RGB2GRAY);
 		return frame;
 	}
 
@@ -172,40 +151,21 @@ public class HexapodCamera {
 
 	public void sendFrame() throws CameraRuntimeException {
 		if (frame != null && frame.width() > 0 && frame.height() > 0) {
-			long time = System.currentTimeMillis();
-			System.out.println("start: " + System.currentTimeMillis());
 			Mat frameCopy = frame.clone();
-			System.out.println("clone: " + System.currentTimeMillis());
 			if (needToRotate) {
 				rotateImage(frameCopy);
-				System.out.println("rotate: " + System.currentTimeMillis());
 			}
 			detectFace(frameCopy);
-			System.out.println("detect face: " + System.currentTimeMillis());
 			resizeImage(frameCopy, 320, 240);
-			System.out.println("resize: " + System.currentTimeMillis());
-//			convertToGray(frameCopy);
-//			System.out.println("convert to gray: " + System.currentTimeMillis());
 			MatOfByte mob = new MatOfByte();
 			Imgcodecs.imencode(".jpg", frameCopy, mob);
-			System.out.println("convert to jpg: " + System.currentTimeMillis());
 			byte[] imageByteArray = mob.toArray();
-//			saveToFile(imageByteArray);
-//			saveToFile(frameCopy);
 			numberOfSentFrames++;
 			HexapodConnection.sendImage(imageByteArray);
-			System.out.println("summary: " + (System.currentTimeMillis() - time) + " / " + frameCopy.size() + " / " + imageByteArray.length);
-			System.out.println();
 		} else {
 			System.out.println("Empty frame");
 			throw new CameraRuntimeException("Frame is empty");
 		}
-	}
-
-	private void saveToFile(Mat frame) {
-		String string = new SimpleDateFormat("HH-mm-ss-SSS").format(System.currentTimeMillis());
-		Imgcodecs.imwrite(string + ".jpg", frame);
-		System.out.println("save to file: " + System.currentTimeMillis());
 	}
 
 	private Mat detectFace(Mat frame) {
@@ -249,7 +209,7 @@ public class HexapodCamera {
 		}
 	}
 
-	private Thread openCameraThread() {
+	private final Thread initCameraThread() {
 		return new Thread(new Runnable() {
 			@Override
 			public void run() {
