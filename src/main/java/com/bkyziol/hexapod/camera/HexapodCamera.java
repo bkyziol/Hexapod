@@ -1,6 +1,7 @@
 package com.bkyziol.hexapod.camera;
 
 import java.io.File;
+import java.nio.ByteBuffer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -19,16 +20,16 @@ import org.opencv.objdetect.Objdetect;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 
-import com.bkyziol.hexapod.mqtt.HexapodConnection;
-
+import com.bkyziol.hexapod.utils.Constants;
 
 import static com.bkyziol.hexapod.utils.Constants.*;
 
 public final class HexapodCamera {
 
-	private volatile Mat frame  = new Mat();
+	private Mat frame = new Mat();
 	private volatile int numberOfCapturedFrames = 0;  //TODO REMOVE
 	private volatile int numberOfSentFrames = 0;  //TODO REMOVE
+	private volatile long lastFrameTimestamp = 0; //TODO REMOVE
 	private final ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
 
 	private int frameWidth = FRAME_WIDTH;
@@ -40,14 +41,14 @@ public final class HexapodCamera {
 
 	private final boolean needToRotate;
 
-	private final Thread openCameraThread = initCameraThread();
+	private final Thread cameraThread = initCameraThread();
 
 	static {
-		System.load(new File(OPENCV_LIB_FILE).getAbsolutePath());
+		System.load(new File(Constants.OPENCV_LIB_FILE).getAbsolutePath());
 	}
 
-	public HexapodCamera() {
-		this.faceCascade.load(HAARCASCADES_PATH + "/haarcascade_frontalface_alt.xml");
+	public HexapodCamera(String opencvLibFile, String haarcascadesPath) {
+		this.faceCascade.load(haarcascadesPath + "/haarcascade_frontalface_alt.xml");
 		if (System.getProperty("os.arch").equals("arm")) {
 			needToRotate = true;
 		} else {
@@ -55,79 +56,47 @@ public final class HexapodCamera {
 		}
 	}
 
-	public void open() {
-		if (!openCameraThread.isAlive()) {
-			System.out.println("Opening camera");
-			openCameraThread.start();
-		} else {
-			System.out.println("Camera is already opening");
-		}
+	public void startCapture() throws InterruptedException {
+		cameraThread.start();
 	}
 
-	public void start() throws CameraRuntimeException {
-		if (camera != null && camera.isOpened()) {
-			Runnable frameGrabber = new Runnable() {
-				@Override
-				public void run() {
-					camera.read(frame);
-					numberOfCapturedFrames++;
-				}
-			};
-			timer.scheduleAtFixedRate(frameGrabber, 0, 50, TimeUnit.MILLISECONDS);
-		} else {
-			System.out.println("Camera is off");
-			open();
-			throw new CameraRuntimeException("Camera is off");
-		}
-	}
-
-	public void captureAndSendFrame() throws CameraRuntimeException {
-		if (camera != null && camera.isOpened()) {
-			Mat newFrame = new Mat();
-			camera.read(newFrame);
+	public byte[] getCompressedFrame() throws CameraRuntimeException {
+		if (frame != null && frame.width() > 0 && frame.height() > 0) {
+//			System.out.print("nr: " + numberOfCapturedFrames + " | timestamp: " + lastFrameTimestamp + " | ");
+			Mat frameCopy = frame.clone();
+			long frameTimestamp = lastFrameTimestamp;
 			if (needToRotate) {
-				rotateImage(newFrame);
+				rotateImage(frameCopy);
 			}
-			detectFace(newFrame);
-			resizeImage(newFrame, 320 ,240);
-			numberOfCapturedFrames++;
-			numberOfSentFrames++;
+			detectFace(frameCopy);
+			resizeImage(frameCopy, 320, 240);
 			MatOfByte mob = new MatOfByte();
-			Imgcodecs.imencode(".jpg", newFrame, mob);
+			Imgcodecs.imencode(".jpg", frameCopy, mob);
 			byte[] imageByteArray = mob.toArray();
-			HexapodConnection.sendImage(imageByteArray);
+//			byte[] imageByteArrayWithTimestamp = putTimestampToByteArray(imageByteArray, frameTimestamp);
+			numberOfSentFrames++;
+//			return imageByteArrayWithTimestamp;
+			return imageByteArray;
 		} else {
-			System.out.println("Camera is off");
-			throw new CameraRuntimeException("Camera is off");
+			System.out.println("Empty frame");
+			throw new CameraRuntimeException("Frame is empty");
 		}
 	}
 
-//	private void saveToFile(byte[] data) {
-//		try {
-//			String string = new SimpleDateFormat("HH-mm-ss-SSS").format(System.currentTimeMillis());
-//			File outputfile = new File(string + ".jpg");
-//			InputStream in = new ByteArrayInputStream(data);
-//			BufferedImage bufferedImage = ImageIO.read(in);
-//			ImageIO.write(bufferedImage, "jpg", outputfile);
-//		} catch (IOException e) {
-//			System.out.println("save to file: error");
-//		}
-//		System.out.println("save to file: " + System.currentTimeMillis());
-//	}
-
-//	private void saveToFile(Mat frame) {
-//		String string = new SimpleDateFormat("HH-mm-ss-SSS").format(System.currentTimeMillis());
-//		Imgcodecs.imwrite(string + ".jpg", frame);
-//		System.out.println("save to file: " + System.currentTimeMillis());
-//	}
-
-	public void changeFrameSize(int frameWidth, int frameHeight) {
-		this.frameWidth = frameWidth;
-		this.frameHeight = frameHeight;
-		if (camera != null && camera.isOpened()) {
-			camera.set(Videoio.CV_CAP_PROP_FRAME_WIDTH, frameWidth);
-			camera.set(Videoio.CV_CAP_PROP_FRAME_HEIGHT, frameHeight);
+	public void stopCapture() throws CameraRuntimeException {
+		if (timer != null && !timer.isShutdown()) {
+			try {
+				timer.shutdown();
+				timer.awaitTermination(50, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException e) {
+				throw new CameraRuntimeException("Exception in stopping the frame capture.", e);
+			}
 		}
+		camera.release();
+	}
+
+	public boolean isCameraOpen() {
+		return (camera != null && camera.isOpened())? true : false;
 	}
 
 	public int getNumberOfCapturedFrames() {
@@ -138,34 +107,28 @@ public final class HexapodCamera {
 		return numberOfSentFrames;
 	}
 
-	private Mat resizeImage(Mat frame, int newWidth, int newHeigth) {
-		Size size = new Size(newWidth, newHeigth);
-		Imgproc.resize(frame, frame, size);
-		return frame;
-	}
-
-	private Mat rotateImage(Mat frame) {
-		Core.rotate(frame, frame, Core.ROTATE_180);
-		return frame;
-	}
-
-	public void sendFrame() throws CameraRuntimeException {
-		if (frame != null && frame.width() > 0 && frame.height() > 0) {
-			Mat frameCopy = frame.clone();
-			if (needToRotate) {
-				rotateImage(frameCopy);
+	private final Thread initCameraThread() {
+		return new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while (camera == null || !camera.isOpened()) {
+					System.out.println("OpenCV version:" + Core.VERSION);
+					camera = new VideoCapture(0);
+					camera.set(Videoio.CV_CAP_PROP_FRAME_WIDTH, frameWidth);
+					camera.set(Videoio.CV_CAP_PROP_FRAME_HEIGHT, frameHeight);
+					System.out.println("Camera connected");
+				}
+				Runnable frameGrabber = new Runnable() {
+					@Override
+					public void run() {
+						camera.read(frame);
+						numberOfCapturedFrames++;
+						lastFrameTimestamp = System.currentTimeMillis();
+					}
+				};
+				timer.scheduleAtFixedRate(frameGrabber, 0, 50, TimeUnit.MILLISECONDS);
 			}
-			detectFace(frameCopy);
-			resizeImage(frameCopy, 320, 240);
-			MatOfByte mob = new MatOfByte();
-			Imgcodecs.imencode(".jpg", frameCopy, mob);
-			byte[] imageByteArray = mob.toArray();
-			numberOfSentFrames++;
-			HexapodConnection.sendImage(imageByteArray);
-		} else {
-			System.out.println("Empty frame");
-			throw new CameraRuntimeException("Frame is empty");
-		}
+		});
 	}
 
 	private Mat detectFace(Mat frame) {
@@ -187,39 +150,50 @@ public final class HexapodCamera {
 		return frame;
 	}
 
-	public void stop() throws CameraRuntimeException {
-		if (timer != null && !timer.isShutdown()) {
-			try {
-				timer.shutdown();
-				timer.awaitTermination(33, TimeUnit.MILLISECONDS);
-			} catch (InterruptedException e) {
-				throw new CameraRuntimeException("Exception in stopping the frame capture.", e);
-			}
-		}
+	private Mat resizeImage(Mat frame, int newWidth, int newHeigth) {
+		Size size = new Size(newWidth, newHeigth);
+		Imgproc.resize(frame, frame, size);
+		return frame;
 	}
 
-	public void close() throws CameraRuntimeException {
-		try {
-			stop();
-			if (camera.isOpened()) {
-				camera.release();
-			}
-		} catch (CameraRuntimeException e) {
-			throw new CameraRuntimeException("Exception in stopping the frame capture, trying to release the camera now... ", e);
-		}
+	private Mat rotateImage(Mat frame) {
+		Core.rotate(frame, frame, Core.ROTATE_180);
+		return frame;
+	}
+	
+	private final byte[] putTimestampToByteArray(byte[] payload, long timestamp) {
+		ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES + payload.length);
+		buffer.putLong(timestamp);
+		buffer.put(payload);
+		return buffer.array();
 	}
 
-	private final Thread initCameraThread() {
-		return new Thread(new Runnable() {
-			@Override
-			public void run() {
-				while (camera == null || !camera.isOpened()) {
-					System.out.println("OpenCV version:" + Core.VERSION);
-					camera = new VideoCapture(0);
-					camera.set(Videoio.CV_CAP_PROP_FRAME_WIDTH, frameWidth);
-					camera.set(Videoio.CV_CAP_PROP_FRAME_HEIGHT, frameHeight);
-				}
-			}
-		});
-	}
+//	private void changeFrameSize(int frameWidth, int frameHeight) {
+//		this.frameWidth = frameWidth;
+//		this.frameHeight = frameHeight;
+//		if (camera != null && camera.isOpened()) {
+//			camera.set(Videoio.CV_CAP_PROP_FRAME_WIDTH, frameWidth);
+//			camera.set(Videoio.CV_CAP_PROP_FRAME_HEIGHT, frameHeight);
+//		}
+//	}
+
+//	private void saveToFile(byte[] data) {
+//	try {
+//		String string = new SimpleDateFormat("HH-mm-ss-SSS").format(System.currentTimeMillis());
+//		File outputfile = new File(string + ".jpg");
+//		InputStream in = new ByteArrayInputStream(data);
+//		BufferedImage bufferedImage = ImageIO.read(in);
+//		ImageIO.write(bufferedImage, "jpg", outputfile);
+//	} catch (IOException e) {
+//		System.out.println("save to file: error");
+//	}
+//	System.out.println("save to file: " + System.currentTimeMillis());
+//}
+
+//private void saveToFile(Mat frame) {
+//	String string = new SimpleDateFormat("HH-mm-ss-SSS").format(System.currentTimeMillis());
+//	Imgcodecs.imwrite(string + ".jpg", frame);
+//	System.out.println("save to file: " + System.currentTimeMillis());
+//}
+
 }

@@ -12,8 +12,8 @@ import org.junit.Test;
 import com.amazonaws.services.iot.client.AWSIotMessage;
 import com.amazonaws.services.iot.client.AWSIotMqttClient;
 import com.amazonaws.services.iot.client.AWSIotQos;
-import com.bkyziol.hexapod.mqtt.AwsIotUtil;
-import com.bkyziol.hexapod.mqtt.AwsIotUtil.KeyStorePasswordPair;
+import com.bkyziol.hexapod.connection.AwsIotUtil;
+import com.bkyziol.hexapod.connection.AwsIotUtil.KeyStorePasswordPair;
 
 public class MqttConnectionTest {
 
