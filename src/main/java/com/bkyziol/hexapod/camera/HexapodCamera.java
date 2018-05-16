@@ -1,7 +1,6 @@
 package com.bkyziol.hexapod.camera;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -20,6 +19,7 @@ import org.opencv.objdetect.Objdetect;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 
+import com.bkyziol.hexapod.Status;
 import com.bkyziol.hexapod.utils.Constants;
 
 import static com.bkyziol.hexapod.utils.Constants.*;
@@ -27,9 +27,6 @@ import static com.bkyziol.hexapod.utils.Constants.*;
 public final class HexapodCamera {
 
 	private Mat frame = new Mat();
-	private volatile int numberOfCapturedFrames = 0;  //TODO REMOVE
-	private volatile int numberOfSentFrames = 0;  //TODO REMOVE
-	private volatile long lastFrameTimestamp = 0; //TODO REMOVE
 	private final ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor();
 
 	private int frameWidth = FRAME_WIDTH;
@@ -62,20 +59,18 @@ public final class HexapodCamera {
 
 	public byte[] getCompressedFrame() throws CameraRuntimeException {
 		if (frame != null && frame.width() > 0 && frame.height() > 0) {
-//			System.out.print("nr: " + numberOfCapturedFrames + " | timestamp: " + lastFrameTimestamp + " | ");
 			Mat frameCopy = frame.clone();
-			long frameTimestamp = lastFrameTimestamp;
 			if (needToRotate) {
 				rotateImage(frameCopy);
 			}
-			detectFace(frameCopy);
-			resizeImage(frameCopy, 320, 240);
+			CameraSettings cameraStettings = Status.getCameraSettings();
+			if (cameraStettings.isFaceDetectionEnabled()) {
+				detectFace(frameCopy);
+			}
+			resizeImage(frameCopy, cameraStettings.getFrameWidth(), cameraStettings.getFrameHeight());
 			MatOfByte mob = new MatOfByte();
 			Imgcodecs.imencode(".jpg", frameCopy, mob);
 			byte[] imageByteArray = mob.toArray();
-//			byte[] imageByteArrayWithTimestamp = putTimestampToByteArray(imageByteArray, frameTimestamp);
-			numberOfSentFrames++;
-//			return imageByteArrayWithTimestamp;
 			return imageByteArray;
 		} else {
 			System.out.println("Empty frame");
@@ -99,14 +94,6 @@ public final class HexapodCamera {
 		return (camera != null && camera.isOpened())? true : false;
 	}
 
-	public int getNumberOfCapturedFrames() {
-		return numberOfCapturedFrames;
-	}
-
-	public int getNumberOfSentFrames() {
-		return numberOfSentFrames;
-	}
-
 	private final Thread initCameraThread() {
 		return new Thread(new Runnable() {
 			@Override
@@ -122,8 +109,6 @@ public final class HexapodCamera {
 					@Override
 					public void run() {
 						camera.read(frame);
-						numberOfCapturedFrames++;
-						lastFrameTimestamp = System.currentTimeMillis();
 					}
 				};
 				timer.scheduleAtFixedRate(frameGrabber, 0, 50, TimeUnit.MILLISECONDS);
@@ -151,6 +136,7 @@ public final class HexapodCamera {
 	}
 
 	private Mat resizeImage(Mat frame, int newWidth, int newHeigth) {
+		System.out.println("resize");
 		Size size = new Size(newWidth, newHeigth);
 		Imgproc.resize(frame, frame, size);
 		return frame;
@@ -160,40 +146,4 @@ public final class HexapodCamera {
 		Core.rotate(frame, frame, Core.ROTATE_180);
 		return frame;
 	}
-	
-	private final byte[] putTimestampToByteArray(byte[] payload, long timestamp) {
-		ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES + payload.length);
-		buffer.putLong(timestamp);
-		buffer.put(payload);
-		return buffer.array();
-	}
-
-//	private void changeFrameSize(int frameWidth, int frameHeight) {
-//		this.frameWidth = frameWidth;
-//		this.frameHeight = frameHeight;
-//		if (camera != null && camera.isOpened()) {
-//			camera.set(Videoio.CV_CAP_PROP_FRAME_WIDTH, frameWidth);
-//			camera.set(Videoio.CV_CAP_PROP_FRAME_HEIGHT, frameHeight);
-//		}
-//	}
-
-//	private void saveToFile(byte[] data) {
-//	try {
-//		String string = new SimpleDateFormat("HH-mm-ss-SSS").format(System.currentTimeMillis());
-//		File outputfile = new File(string + ".jpg");
-//		InputStream in = new ByteArrayInputStream(data);
-//		BufferedImage bufferedImage = ImageIO.read(in);
-//		ImageIO.write(bufferedImage, "jpg", outputfile);
-//	} catch (IOException e) {
-//		System.out.println("save to file: error");
-//	}
-//	System.out.println("save to file: " + System.currentTimeMillis());
-//}
-
-//private void saveToFile(Mat frame) {
-//	String string = new SimpleDateFormat("HH-mm-ss-SSS").format(System.currentTimeMillis());
-//	Imgcodecs.imwrite(string + ".jpg", frame);
-//	System.out.println("save to file: " + System.currentTimeMillis());
-//}
-
 }
