@@ -15,7 +15,7 @@ import com.google.gson.Gson;
 public class CommandTopic extends AWSIotTopic {
 
 	private HexapodConnection connection;
-	private static long lastMessageTimestamp = 0;
+	private long lastMessageTimestamp = 0;
 
 	public CommandTopic() {
 		super(TopicName.COMMAND.getName(), AWSIotQos.QOS0);
@@ -90,14 +90,13 @@ public class CommandTopic extends AWSIotTopic {
 		// System.out.println(commandMessagePayload.getVideoQuality());
 		// System.out.println("------------------------------------------");
 
-		CameraSettings cameraSettings = Status.getCameraSettings();
-		cameraSettings.setCameraEnabled(commandMessagePayload.isCameraEnabled());
-		cameraSettings.setFaceDetectionEnabled(commandMessagePayload.isFaceDetectionEnabled());
-		cameraSettings.setVideoFPS(commandMessagePayload.getVideoFPS());
-		cameraSettings.setVideoQuality(commandMessagePayload.getVideoQuality());
+		CameraSettings.setCameraEnabled(commandMessagePayload.isCameraEnabled());
+		CameraSettings.setFaceDetectionEnabled(commandMessagePayload.isFaceDetectionEnabled());
+		CameraSettings.setVideoFPS(commandMessagePayload.getVideoFPS());
+		CameraSettings.setVideoQuality(commandMessagePayload.getVideoQuality());
 	}
 
-	public static long getLastMessageTimestamp() {
+	public long getLastMessageTimestamp() {
 		return lastMessageTimestamp;
 	}
 

@@ -3,47 +3,47 @@ package com.bkyziol.hexapod.camera;
 import com.bkyziol.hexapod.Main;
 
 public class CameraSettings {
-	private boolean cameraEnabled = false;
-	private boolean faceDetectionEnabled = false;
-	private VideQuality videoQuality = VideQuality.QUALITY_3;
-	private int videoFPS = 4;
+	private static boolean cameraEnabled = false;
+	private static boolean faceDetectionEnabled = false;
+	private static VideQuality videoQuality = VideQuality.QUALITY_3;
+	private static int videoFPS = 4;
 
-	public boolean isCameraEnabled() {
+	public static boolean isCameraEnabled() {
 		return cameraEnabled;
 	}
 
-	public void setCameraEnabled(boolean enabled) {
-		this.cameraEnabled = enabled;
+	public static void setCameraEnabled(boolean enabled) {
+		CameraSettings.cameraEnabled = enabled;
 	}
 
-	public boolean isFaceDetectionEnabled() {
+	public static boolean isFaceDetectionEnabled() {
 		return faceDetectionEnabled;
 	}
 
-	public void setFaceDetectionEnabled(boolean faceDetectionEnabled) {
-		this.faceDetectionEnabled = faceDetectionEnabled;
+	public static void setFaceDetectionEnabled(boolean faceDetectionEnabled) {
+		CameraSettings.faceDetectionEnabled = faceDetectionEnabled;
 	}
 
-	public int getFrameHeight() {
+	public static int getFrameHeight() {
 		return videoQuality.getHeight();
 	}
 
-	public int getFrameWidth() {
+	public static int getFrameWidth() {
 		return videoQuality.getWidth();
 	}
 
-	public void setVideoQuality(int quality) {
-		this.videoQuality = VideQuality.getQuality(quality);
+	public static void setVideoQuality(int quality) {
+		CameraSettings.videoQuality = VideQuality.getQuality(quality);
 	}
 
-	public int getVideoFPS() {
+	public static int getVideoFPS() {
 		return videoFPS;
 	}
 
-	public void setVideoFPS(int videoFPS) {
-		if (this.videoFPS != videoFPS) {
+	public static void setVideoFPS(int videoFPS) {
+		if (CameraSettings.videoFPS != videoFPS) {
 			System.out.println("new frame rate: " + videoFPS);
-			this.videoFPS = videoFPS;
+			CameraSettings.videoFPS = videoFPS;
 			Main.changeFrameRate(videoFPS);
 		}
 	}

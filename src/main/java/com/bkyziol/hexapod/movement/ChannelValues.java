@@ -36,9 +36,9 @@ public class ChannelValues {
 		if (position < this.max && position > this.min) {
 			this.current = position;
 			ServoController.setTarget(this.channel, this.current);
-			System.out.println(this.channel + " -> " + this.current);
-		} else {
-			System.out.println("Out of bound");
+//			System.out.println(this.channel + " -> " + this.current);
+//		} else {
+//			System.out.println("Out of bound");
 		}
 	}
 

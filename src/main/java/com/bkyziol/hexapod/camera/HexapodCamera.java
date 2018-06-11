@@ -19,7 +19,6 @@ import org.opencv.objdetect.Objdetect;
 import org.opencv.videoio.VideoCapture;
 import org.opencv.videoio.Videoio;
 
-import com.bkyziol.hexapod.Status;
 import com.bkyziol.hexapod.utils.Constants;
 
 import static com.bkyziol.hexapod.utils.Constants.*;
@@ -37,7 +36,6 @@ public final class HexapodCamera {
 	private int absoluteFaceSize = 0;
 
 	private final boolean needToRotate;
-
 	private final Thread cameraThread = initCameraThread();
 
 	static {
@@ -57,24 +55,22 @@ public final class HexapodCamera {
 		cameraThread.start();
 	}
 
-	public byte[] getCompressedFrame() throws CameraRuntimeException {
+	public byte[] getCompressedFrame() {
 		if (frame != null && frame.width() > 0 && frame.height() > 0) {
 			Mat frameCopy = frame.clone();
 			if (needToRotate) {
 				rotateImage(frameCopy);
 			}
-			CameraSettings cameraStettings = Status.getCameraSettings();
-			if (cameraStettings.isFaceDetectionEnabled()) {
-				detectFace(frameCopy);
+			if (CameraSettings.isFaceDetectionEnabled()) {
+				markFaces(frameCopy);
 			}
-			resizeImage(frameCopy, cameraStettings.getFrameWidth(), cameraStettings.getFrameHeight());
+			resizeImage(frameCopy, CameraSettings.getFrameWidth(), CameraSettings.getFrameHeight());
 			MatOfByte mob = new MatOfByte();
 			Imgcodecs.imencode(".jpg", frameCopy, mob);
 			byte[] imageByteArray = mob.toArray();
 			return imageByteArray;
 		} else {
-			System.out.println("Empty frame");
-			throw new CameraRuntimeException("Frame is empty");
+			return null;
 		}
 	}
 
@@ -116,7 +112,19 @@ public final class HexapodCamera {
 		});
 	}
 
-	private Mat detectFace(Mat frame) {
+	public Rect[] detectFaces() {
+		if (frame != null && frame.width() > 0 && frame.height() > 0) {
+			Mat frameCopy = frame.clone();
+			if (needToRotate) {
+				rotateImage(frameCopy);
+			}
+			return getFacesArray(frameCopy);
+		} else {
+			return null;
+		}
+	}
+
+	private Rect[] getFacesArray(Mat frame) {
 		MatOfRect faces = new MatOfRect();
 		Mat grayFrame = new Mat();
 		Imgproc.cvtColor(frame, grayFrame, Imgproc.COLOR_BGR2GRAY);
@@ -130,8 +138,14 @@ public final class HexapodCamera {
 		this.faceCascade.detectMultiScale(grayFrame, faces, 1.1, 2, 0 | Objdetect.CASCADE_SCALE_IMAGE,
 				new Size(this.absoluteFaceSize, this.absoluteFaceSize), new Size());
 		Rect[] facesArray = faces.toArray();
-		for (int i = 0; i < facesArray.length; i++)
+		return facesArray;
+	}
+
+	private Mat markFaces(Mat frame) {
+		Rect[] facesArray = getFacesArray(frame);
+		for (int i = 0; i < facesArray.length; i++) {
 			Imgproc.rectangle(frame, facesArray[i].tl(), facesArray[i].br(), new Scalar(0, 255, 0), 3);
+		}
 		return frame;
 	}
 
