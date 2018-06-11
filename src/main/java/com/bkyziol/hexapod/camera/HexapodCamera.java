@@ -136,7 +136,6 @@ public final class HexapodCamera {
 	}
 
 	private Mat resizeImage(Mat frame, int newWidth, int newHeigth) {
-		System.out.println("resize");
 		Size size = new Size(newWidth, newHeigth);
 		Imgproc.resize(frame, frame, size);
 		return frame;

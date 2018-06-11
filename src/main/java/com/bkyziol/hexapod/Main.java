@@ -7,6 +7,8 @@ import com.bkyziol.hexapod.connection.HexapodConnection;
 import com.bkyziol.hexapod.connection.HexapodConnection.HexapodConnectionBuilder;
 import com.bkyziol.hexapod.connection.TopicName;
 import com.bkyziol.hexapod.iot.CommandTopic;
+import com.bkyziol.hexapod.iot.ServiceTopic;
+import com.bkyziol.hexapod.movement.HeadMovement;
 import com.bkyziol.hexapod.utils.Constants;
 
 import java.util.UUID;
@@ -15,7 +17,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 
 public class Main {
 
@@ -39,12 +40,15 @@ public class Main {
 				Constants.CLIENT_ENDPOINT,
 				UUID.randomUUID().toString());
 		CommandTopic commandTopic = new CommandTopic();
+		ServiceTopic serviceTopic = new ServiceTopic();
 		connectionBuilder.addTopic(commandTopic);
-
+		connectionBuilder.addTopic(serviceTopic);
 		connection = connectionBuilder.build();
 		connection.connect();
 		commandTopic.setConnection(connection);
 		startSendingFrames(250);
+		Thread headMovementThread = new Thread(new HeadMovement());
+		headMovementThread.start();
 	}
 
 	private static void startSendingFrames(int delay) {
@@ -54,9 +58,9 @@ public class Main {
 			public void run() {
 				CameraSettings cameraSettings = Status.getCameraSettings();
 				try {
-					if (cameraSettings.isCameraEnabled() && Status.getLastStatusTimestamp() + 5000 > System.currentTimeMillis()) {
+					if (cameraSettings.isCameraEnabled()
+							&& Status.getLastStatusTimestamp() + 5000 > System.currentTimeMillis()) {
 						byte[] payload = camera.getCompressedFrame();
-						System.out.println("frame send");
 						connection.sendMessage(TopicName.CAMERA, payload);
 					}
 				} catch (CameraRuntimeException e) {
@@ -66,7 +70,7 @@ public class Main {
 		};
 		sendFramesTimer.scheduleAtFixedRate(framesSender, 0, delay, TimeUnit.MILLISECONDS);
 	}
-	
+
 	public static void changeFrameRate(int fps) {
 		int delay = 1000 / fps;
 		sendFramesTimer.shutdown();

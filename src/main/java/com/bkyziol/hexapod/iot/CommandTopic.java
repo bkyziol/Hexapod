@@ -8,12 +8,14 @@ import com.bkyziol.hexapod.camera.CameraSettings;
 import com.bkyziol.hexapod.connection.HexapodConnection;
 import com.bkyziol.hexapod.connection.TopicName;
 import com.bkyziol.hexapod.model.CommandMessage;
+import com.bkyziol.hexapod.movement.HeadMovement;
+import com.bkyziol.hexapod.movement.HeadMovementType;
 import com.google.gson.Gson;
 
 public class CommandTopic extends AWSIotTopic {
 
 	private HexapodConnection connection;
-	private long lastMessageTimestamp = 0;
+	private static long lastMessageTimestamp = 0;
 
 	public CommandTopic() {
 		super(TopicName.COMMAND.getName(), AWSIotQos.QOS0);
@@ -52,9 +54,33 @@ public class CommandTopic extends AWSIotTopic {
 			responseThread.start();
 		}
 		
+		String cameraMovement = commandMessagePayload.getCameraMovement();
+		HeadMovement.setSpeed(commandMessagePayload.getCameraSpeed());
+
+		switch (cameraMovement) {
+		case "CAMERA_LEFT":
+			HeadMovement.setMovement(HeadMovementType.LEFT);
+			break;
+		case "CAMERA_RIGHT":
+			HeadMovement.setMovement(HeadMovementType.RIGHT);
+			break;
+		case "CAMERA_CENTER":
+			HeadMovement.setMovement(HeadMovementType.CENTER);
+			break;
+		case "CAMERA_UP":
+			HeadMovement.setMovement(HeadMovementType.UP);
+			break;
+		case "CAMERA_DOWN":
+			HeadMovement.setMovement(HeadMovementType.DOWN);
+			break;
+		default:
+			HeadMovement.setMovement(HeadMovementType.STAND_BY);
+			break;
+		}
+
 		System.out.println("------------------------------------------");
 		System.out.println(hexapodMovement);
-		System.out.println(commandMessagePayload.getCameraMovement());
+		System.out.println(cameraMovement );
 		// System.out.println(commandMessagePayload.isSleepMode());
 		// System.out.println(commandMessagePayload.getCameraSpeed());
 		// System.out.println(commandMessagePayload.getHexapodSpeed());
@@ -63,6 +89,7 @@ public class CommandTopic extends AWSIotTopic {
 		// System.out.println(commandMessagePayload.getVideoFPS());
 		// System.out.println(commandMessagePayload.getVideoQuality());
 		// System.out.println("------------------------------------------");
+
 		CameraSettings cameraSettings = Status.getCameraSettings();
 		cameraSettings.setCameraEnabled(commandMessagePayload.isCameraEnabled());
 		cameraSettings.setFaceDetectionEnabled(commandMessagePayload.isFaceDetectionEnabled());
@@ -70,7 +97,7 @@ public class CommandTopic extends AWSIotTopic {
 		cameraSettings.setVideoQuality(commandMessagePayload.getVideoQuality());
 	}
 
-	public long getLastMessageTimestamp() {
+	public static long getLastMessageTimestamp() {
 		return lastMessageTimestamp;
 	}
 
