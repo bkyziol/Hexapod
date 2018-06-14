@@ -10,6 +10,8 @@ import com.bkyziol.hexapod.iot.CommandTopic;
 import com.bkyziol.hexapod.iot.ServiceTopic;
 import com.bkyziol.hexapod.movement.HeadMovement;
 import com.bkyziol.hexapod.movement.HeadMovementType;
+import com.bkyziol.hexapod.movement.ServoController;
+import com.bkyziol.hexapod.movement.Status;
 import com.bkyziol.hexapod.utils.Constants;
 
 import java.util.UUID;
@@ -52,7 +54,6 @@ public class Main {
 		commandTopic.setConnection(connection);
 		startCameraTimer();
 		startMovementTimer();
-		new Thread(new HeadMovement()).start();
 	}
 
 	private static void startMovementTimer() {
@@ -60,16 +61,23 @@ public class Main {
 		Runnable timer = new Runnable() {
 			@Override
 			public void run() {
-				if (commandTopic.getLastMessageTimestamp() + 3000 < System.currentTimeMillis()) {
-					if (CameraSettings.isFaceDetectionEnabled()) {
-						faceDetection.lookAt();
-					} else {
-						HeadMovement.setMovement(HeadMovementType.STAND_BY);
-					}
-				};
+//				System.out.print(".");
+//				long currentTimestamp = System.currentTimeMillis();
+//				long lastMessageTimestamp = commandTopic.getLastMessageTimestamp();
+//				if (lastMessageTimestamp + 5000 < currentTimestamp && CameraSettings.isFaceDetectionEnabled()) {
+//					Status.setHeadMovementType(HeadMovementType.TRACKING);
+//					faceDetection.lookAt();
+//				} else if (lastMessageTimestamp + 3000 < currentTimestamp) {
+//					Status.setHeadMovementType(HeadMovementType.STAND_BY);
+//				} else {
+////					HeadMovement.makeMove();
+////					BodyMovement.makeMove();
+//				}
+				ServoController.getMovingState();
 			}
 		};
-		executor.scheduleAtFixedRate(timer, 0, 100, TimeUnit.MILLISECONDS);
+		executor.scheduleAtFixedRate(timer, 0, 50, TimeUnit.MILLISECONDS);
+//		executor.scheduleAtFixedRate(timer, 0, 4000, TimeUnit.MILLISECONDS);
 	}
 
 	private static void startCameraTimer() {

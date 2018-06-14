@@ -1,11 +1,12 @@
 package com.bkyziol.hexapod.movement;
 public enum HeadMovementType {
-	UP("CAMERA_UP"),
-	DOWN("CAMERA_DOWN"),
-	LEFT("CAMERA_LEFT"),
-	RIGHT("CAMERA_RIGHT"),
-	CENTER("CAMERA_CENTER"),
-	STAND_BY("STAND_BY")
+	UP("UP"),
+	DOWN("DOWN"),
+	LEFT("LEFT"),
+	RIGHT("RIGHT"),
+	CENTER("CENTER"),
+	STAND_BY("STAND_BY"),
+	TRACKING("TRACKING"),
 	;
 
 	private final String name;

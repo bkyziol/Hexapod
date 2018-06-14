@@ -1,19 +1,16 @@
 package com.bkyziol.hexapod.movement;
 
-public class ChannelValues {
+public abstract class Servo {
 	private final int channel;
 	private final int min;
-	private final int neutral;
 	private final int max;
 
-	private int current;
+	protected int current;
 
-	public ChannelValues(int channel, int min, int neutral, int max) {
+	public Servo(int channel, int min, int max) {
 		this.channel = channel;
 		this.min = min;
-		this.neutral = neutral;
 		this.max = max;
-		this.current = neutral;
 	}
 
 	public int getChannel() {
@@ -24,17 +21,13 @@ public class ChannelValues {
 		return min;
 	}
 
-	public int getNeutral() {
-		return neutral;
-	}
-
 	public int getMax() {
 		return max;
 	}
 
-	public void setPosition(int position) {
-		if (position < this.max && position > this.min) {
-			this.current = position;
+	public void setValue(int value) {
+		if (value < this.max && value > this.min) {
+			this.current = value;
 			ServoController.setTarget(this.channel, this.current);
 //			System.out.println(this.channel + " -> " + this.current);
 //		} else {
@@ -45,13 +38,4 @@ public class ChannelValues {
 	public int getCurrent() {
 		return current;
 	}
-
-	public void increaseAngle(int i) {
-		setPosition(this.current + i);
-	}
-
-	public void decreaseAngle(int i) {
-		setPosition(this.current - i);
-	}
-
 }

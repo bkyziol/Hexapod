@@ -3,13 +3,13 @@ package com.bkyziol.hexapod.iot;
 import com.amazonaws.services.iot.client.AWSIotMessage;
 import com.amazonaws.services.iot.client.AWSIotQos;
 import com.amazonaws.services.iot.client.AWSIotTopic;
-import com.bkyziol.hexapod.Status;
 import com.bkyziol.hexapod.camera.CameraSettings;
 import com.bkyziol.hexapod.connection.HexapodConnection;
 import com.bkyziol.hexapod.connection.TopicName;
 import com.bkyziol.hexapod.model.CommandMessage;
-import com.bkyziol.hexapod.movement.HeadMovement;
+import com.bkyziol.hexapod.movement.BodyMovement;
 import com.bkyziol.hexapod.movement.HeadMovementType;
+import com.bkyziol.hexapod.movement.Status;
 import com.google.gson.Gson;
 
 public class CommandTopic extends AWSIotTopic {
@@ -23,26 +23,62 @@ public class CommandTopic extends AWSIotTopic {
 
 	@Override
 	public void onMessage(AWSIotMessage message) {
-		lastMessageTimestamp = System.currentTimeMillis();
 		Gson gson = new Gson();
 		CommandMessage commandMessagePayload = gson.fromJson(message.getStringPayload(), CommandMessage.class);
-		String hexapodMovement = commandMessagePayload.getHexapodMovement();
-		String responseString = null;
 
+		Status.setHeadSpeed(commandMessagePayload.getHeadSpeed());
+		Status.setBodySpeed(commandMessagePayload.getBodySpeed());
+
+		CameraSettings.setCameraEnabled(commandMessagePayload.isCameraEnabled());
+		CameraSettings.setFaceDetectionEnabled(commandMessagePayload.isFaceDetectionEnabled());
+		CameraSettings.setVideoFPS(commandMessagePayload.getVideoFPS());
+		CameraSettings.setVideoQuality(commandMessagePayload.getVideoQuality());
+
+		String bodyMovement = commandMessagePayload.getBodyMovement();
+		String headMovement = commandMessagePayload.getHeadMovement();
+		if (!bodyMovement.equals("STAND_BY") || !headMovement.equals("STAND_BY")) {
+			lastMessageTimestamp = System.currentTimeMillis();
+		}
+
+		String responseString = null;
 		if (commandMessagePayload.isStatusReportNeeded()) {
 			Status.setLastStatusTimestamp(System.currentTimeMillis());
 			responseString = "OK";
 		}
 
-		switch (hexapodMovement) {
+		switch (bodyMovement) {
 		case "RISE":
-			responseString = "STANDING";
+			if (BodyMovement.standUp()) {
+				responseString = "STANDING";
+			}
 			break;
 		case "CROUCH":
-			responseString = "CROUCHING";
+			if (BodyMovement.lieDown()) {
+				responseString = "CROUCHING";
+			}
 			break;
 		}
 
+		switch (headMovement) {
+		case "LEFT":
+			Status.setHeadMovementType(HeadMovementType.LEFT);
+			break;
+		case "RIGHT":
+			Status.setHeadMovementType(HeadMovementType.RIGHT);
+			break;
+		case "CENTER":
+			Status.setHeadMovementType(HeadMovementType.CENTER);
+			break;
+		case "UP":
+			Status.setHeadMovementType(HeadMovementType.UP);
+			break;
+		case "DOWN":
+			Status.setHeadMovementType(HeadMovementType.DOWN);
+			break;
+		default:
+			Status.setHeadMovementType(HeadMovementType.STAND_BY);
+			break;
+		}
 		if (responseString != null) {
 			byte[] payload = new String(responseString).getBytes();
 			Thread responseThread = new Thread(new Runnable() {
@@ -53,47 +89,12 @@ public class CommandTopic extends AWSIotTopic {
 			});
 			responseThread.start();
 		}
-		
-		String cameraMovement = commandMessagePayload.getCameraMovement();
-		HeadMovement.setSpeed(commandMessagePayload.getCameraSpeed());
 
-		switch (cameraMovement) {
-		case "CAMERA_LEFT":
-			HeadMovement.setMovement(HeadMovementType.LEFT);
-			break;
-		case "CAMERA_RIGHT":
-			HeadMovement.setMovement(HeadMovementType.RIGHT);
-			break;
-		case "CAMERA_CENTER":
-			HeadMovement.setMovement(HeadMovementType.CENTER);
-			break;
-		case "CAMERA_UP":
-			HeadMovement.setMovement(HeadMovementType.UP);
-			break;
-		case "CAMERA_DOWN":
-			HeadMovement.setMovement(HeadMovementType.DOWN);
-			break;
-		default:
-			HeadMovement.setMovement(HeadMovementType.STAND_BY);
-			break;
-		}
-
-		System.out.println("------------------------------------------");
-		System.out.println(hexapodMovement);
-		System.out.println(cameraMovement );
-		// System.out.println(commandMessagePayload.isSleepMode());
-		// System.out.println(commandMessagePayload.getCameraSpeed());
-		// System.out.println(commandMessagePayload.getHexapodSpeed());
-		// System.out.println(commandMessagePayload.getStrideLength());
-		 System.out.println(commandMessagePayload.isCameraEnabled());
-		// System.out.println(commandMessagePayload.getVideoFPS());
-		// System.out.println(commandMessagePayload.getVideoQuality());
-		// System.out.println("------------------------------------------");
-
-		CameraSettings.setCameraEnabled(commandMessagePayload.isCameraEnabled());
-		CameraSettings.setFaceDetectionEnabled(commandMessagePayload.isFaceDetectionEnabled());
-		CameraSettings.setVideoFPS(commandMessagePayload.getVideoFPS());
-		CameraSettings.setVideoQuality(commandMessagePayload.getVideoQuality());
+//		System.out.println("------------------------------------------");
+//		System.out.println("BODY: " + bodyMovement);
+//		System.out.println("HEAD: " + headMovement );
+//		System.out.println("CAMERA: " + commandMessagePayload.isCameraEnabled());
+//		System.out.println("FACE DETECTION: " + commandMessagePayload.isFaceDetectionEnabled());
 	}
 
 	public long getLastMessageTimestamp() {

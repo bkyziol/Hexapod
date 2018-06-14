@@ -3,13 +3,12 @@ package com.bkyziol.hexapod.model;
 public class CommandMessage {
 
 	private long commandTimestamp;
-	private String hexapodMovement;
-	private String cameraMovement;
+	private String bodyMovement;
+	private String headMovement;
 	private boolean statusReportNeeded;
-	private boolean sleepMode;
-	private int hexapodSpeed;
+	private int bodySpeed;
 	private int strideLength;
-	private int cameraSpeed;
+	private int headSpeed;
 	private boolean cameraEnabled;
 	private boolean faceDetectionEnabled;
 	private int videoQuality;
@@ -23,20 +22,20 @@ public class CommandMessage {
 		this.commandTimestamp = commandTimestamp;
 	}
 
-	public String getHexapodMovement() {
-		return hexapodMovement;
+	public String getBodyMovement() {
+		return bodyMovement;
 	}
 
-	public void setHexapodMovement(String hexapodMovement) {
-		this.hexapodMovement = hexapodMovement;
+	public void setBodyMovement(String bodyMovement) {
+		this.bodyMovement = bodyMovement;
 	}
 
-	public String getCameraMovement() {
-		return cameraMovement;
+	public String getHeadMovement() {
+		return headMovement;
 	}
 
-	public void setCameraMovement(String cameraMovement) {
-		this.cameraMovement = cameraMovement;
+	public void setHeadMovement(String headMovement) {
+		this.headMovement = headMovement;
 	}
 
 	public boolean isStatusReportNeeded() {
@@ -47,20 +46,12 @@ public class CommandMessage {
 		this.statusReportNeeded = statusReportNeeded;
 	}
 
-	public boolean isSleepMode() {
-		return sleepMode;
+	public int getBodySpeed() {
+		return bodySpeed;
 	}
 
-	public void setSleepMode(boolean sleepMode) {
-		this.sleepMode = sleepMode;
-	}
-
-	public int getHexapodSpeed() {
-		return hexapodSpeed;
-	}
-
-	public void setHexapodSpeed(int hexapodSpeed) {
-		this.hexapodSpeed = hexapodSpeed;
+	public void setBodySpeed(int bodySpeed) {
+		this.bodySpeed = bodySpeed;
 	}
 
 	public int getStrideLength() {
@@ -71,12 +62,12 @@ public class CommandMessage {
 		this.strideLength = strideLength;
 	}
 
-	public int getCameraSpeed() {
-		return cameraSpeed;
+	public int getHeadSpeed() {
+		return headSpeed;
 	}
 
-	public void setCameraSpeed(int cameraSpeed) {
-		this.cameraSpeed = cameraSpeed;
+	public void setHeadSpeed(int headSpeed) {
+		this.headSpeed = headSpeed;
 	}
 	
 	public boolean isCameraEnabled() {
@@ -110,5 +101,4 @@ public class CommandMessage {
 	public void setVideoFPS(int videoFPS) {
 		this.videoFPS = videoFPS;
 	}
-
 }

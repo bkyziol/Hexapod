@@ -2,11 +2,7 @@ package com.bkyziol.hexapod.camera;
 
 import org.opencv.core.Rect;
 
-import com.bkyziol.hexapod.movement.HeadMovement;
-import com.bkyziol.hexapod.movement.HeadMovementType;
-
-import static com.bkyziol.hexapod.movement.ServoControllerValues.HEAD_HORIZONTAL;
-import static com.bkyziol.hexapod.movement.ServoControllerValues.HEAD_VERTICAL;
+import com.bkyziol.hexapod.movement.Head;
 import static com.bkyziol.hexapod.utils.Constants.*;
 
 public class FaceTracking {
@@ -46,17 +42,14 @@ public class FaceTracking {
 			double rightMargin = FRAME_WIDTH - closestFace.getX2();
 			if (leftMargin - 100 > rightMargin) {
 				int value = (int) (leftMargin - rightMargin) * 4;
-				HEAD_HORIZONTAL.increaseAngle(value);
-//				System.out.println("turn right: " + (leftMargin - rightMargin));
-//				System.out.println("increaseAngle: " + value);
+				Head.getHorizontalServo().increaseAngle(value);
+				System.out.println("turn right: " + (leftMargin - rightMargin));
 			} else if (rightMargin - 100 > leftMargin) {
 				int value = (int) (rightMargin - leftMargin) * 4;
-				HEAD_HORIZONTAL.decreaseAngle(value);
-//				System.out.println("turn left: " + (rightMargin - leftMargin));
-//				System.out.println("decreaseAngle: " + value);
+				Head.getHorizontalServo().decreaseAngle(value);
+				System.out.println("turn left: " + (rightMargin - leftMargin));
 			} else {
 				System.out.println("is centered: " + (rightMargin - leftMargin));
-				HeadMovement.setMovement(HeadMovementType.STAND_BY);
 			}
 		} else {
 			System.out.println("no face detected");
