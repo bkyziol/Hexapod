@@ -8,6 +8,7 @@ import com.bkyziol.hexapod.connection.HexapodConnection.HexapodConnectionBuilder
 import com.bkyziol.hexapod.connection.TopicName;
 import com.bkyziol.hexapod.iot.CommandTopic;
 import com.bkyziol.hexapod.iot.ServiceTopic;
+import com.bkyziol.hexapod.movement.BodyMovement;
 import com.bkyziol.hexapod.movement.HeadMovement;
 import com.bkyziol.hexapod.movement.HeadMovementType;
 import com.bkyziol.hexapod.movement.ServoController;
@@ -32,6 +33,7 @@ public class Main {
 
 	static {
 		Logger.getLogger("").getHandlers()[0].setLevel(Level.SEVERE);
+		ServoController.openSerialPort();
 	}
 
 	public static void main(String[] args) throws InterruptedException {
@@ -51,7 +53,7 @@ public class Main {
 		connectionBuilder.addTopic(serviceTopic);
 		connection = connectionBuilder.build();
 		connection.connect();
-		commandTopic.setConnection(connection);
+		Status.setConnection(connection);
 		startCameraTimer();
 		startMovementTimer();
 	}
@@ -61,23 +63,20 @@ public class Main {
 		Runnable timer = new Runnable() {
 			@Override
 			public void run() {
-//				System.out.print(".");
-//				long currentTimestamp = System.currentTimeMillis();
-//				long lastMessageTimestamp = commandTopic.getLastMessageTimestamp();
-//				if (lastMessageTimestamp + 5000 < currentTimestamp && CameraSettings.isFaceDetectionEnabled()) {
-//					Status.setHeadMovementType(HeadMovementType.TRACKING);
-//					faceDetection.lookAt();
-//				} else if (lastMessageTimestamp + 3000 < currentTimestamp) {
-//					Status.setHeadMovementType(HeadMovementType.STAND_BY);
-//				} else {
-////					HeadMovement.makeMove();
-////					BodyMovement.makeMove();
-//				}
-				ServoController.getMovingState();
+				long currentTimestamp = System.currentTimeMillis();
+				long lastMessageTimestamp = Status.getLastMoveTimestamp();
+				if (lastMessageTimestamp + 5000 < currentTimestamp && CameraSettings.isFaceDetectionEnabled()) {
+					Status.setHeadMovementType(HeadMovementType.TRACKING);
+					faceDetection.lookAt();
+				} else if (lastMessageTimestamp + 3000 < currentTimestamp) {
+					Status.setHeadMovementType(HeadMovementType.STAND_BY);
+				} else {
+					HeadMovement.makeMove();
+					BodyMovement.makeMove();
+				}
 			}
 		};
 		executor.scheduleAtFixedRate(timer, 0, 50, TimeUnit.MILLISECONDS);
-//		executor.scheduleAtFixedRate(timer, 0, 4000, TimeUnit.MILLISECONDS);
 	}
 
 	private static void startCameraTimer() {

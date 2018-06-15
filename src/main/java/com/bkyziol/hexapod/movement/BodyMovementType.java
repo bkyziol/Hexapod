@@ -1,6 +1,8 @@
 package com.bkyziol.hexapod.movement;
 public enum BodyMovementType {
 	STAND_BY("STAND_BY"),
+	RISE("RISE"),
+	CROUCH("CROUCH"),
 	;
 
 	private final String name;

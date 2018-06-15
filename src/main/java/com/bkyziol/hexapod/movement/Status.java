@@ -1,13 +1,43 @@
 package com.bkyziol.hexapod.movement;
 
+import com.bkyziol.hexapod.connection.HexapodConnection;
+import com.bkyziol.hexapod.connection.TopicName;
+
 public class Status {
 
+	private static HexapodConnection connection;
 	private static HeadMovementType headMovementType;
 	private static BodyMovementType bodyMovementType;
-	private static boolean sleepMode;
+	private static boolean sleepMode = true;
 	private static long lastStatusTimestamp;
+	private static long lastMoveTimestamp;
 	private static int bodySpeed;
 	private static int headSpeed;
+
+	public static void sendStatusMessage() {
+		if (connection == null || !connection.isConnected()) {
+			return;
+		}
+		String status;
+		if (sleepMode) {
+			status = "CROUCHING";
+		} else {
+			status = "STANDING";
+		}
+		byte[] payload = status.getBytes();
+		Thread responseThread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				lastStatusTimestamp = System.currentTimeMillis();
+				connection.sendMessage(TopicName.STATUS, payload);
+			}
+		});
+		responseThread.start();
+	}
+
+	public static void setConnection(HexapodConnection connection) {
+		Status.connection = connection;
+	}
 
 	public static HeadMovementType getHeadMovementType() {
 		return headMovementType;
@@ -31,14 +61,19 @@ public class Status {
 
 	public static void setSleepMode(boolean sleepMode) {
 		Status.sleepMode = sleepMode;
+		sendStatusMessage();
 	}
 
 	public static long getLastStatusTimestamp() {
 		return lastStatusTimestamp;
 	}
 
-	public static void setLastStatusTimestamp(long lastPingTimestamp) {
-		Status.lastStatusTimestamp = lastPingTimestamp;
+	public static long getLastMoveTimestamp() {
+		return lastMoveTimestamp;
+	}
+
+	public static void setLastMoveTimestamp(long lastMoveTimestamp) {
+		Status.lastMoveTimestamp = lastMoveTimestamp;
 	}
 
 	public static int getBodySpeed() {
@@ -56,5 +91,4 @@ public class Status {
 	public static void setHeadSpeed(int headSpeed) {
 		Status.headSpeed = headSpeed;
 	}
-
 }

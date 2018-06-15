@@ -9,7 +9,7 @@ public class ServoController {
 	private static final String PORT_NAME = "/dev/ttyAMA0";
 	private static SerialPort serialPort;
 
-	static {
+	public static void openSerialPort() {
 		openSerialPort(PORT_NAME);
 	}
 
@@ -88,33 +88,14 @@ public class ServoController {
 	}
 
 	public static int getMovingState() {
-		byte command = (byte) 0x93;
-		byte[] response = new byte[2];
-//		String response;
-//		response[0] = 2;
-//		int ret = -1;
 		try {
-			serialPort.writeString("");
-			serialPort.writeByte(command);
-			System.out.println("request: " + command);
-//			try {
-//				Thread.sleep(100);
-				response = serialPort.readBytes(2, 100);
-//				response = serialPort.readString();
-				System.out.println("response: " + response[0] + ", " + response[1]);
-			} catch (SerialPortTimeoutException e) {
-				System.out.println("timeout");
-//			} catch (InterruptedException e) {
-//				System.out.println("InterruptedException");
-//			}
-//			if (response[0] >= 0) {
-//				ret = response[0];
-//			}
-		} catch (SerialPortException e) {
-			System.out.println("Error while getting moving state: " + e);
+			byte[] command = { (byte) 0x93, (byte) 0x93 };
+			byte[] response = new byte[2];
+			serialPort.writeBytes(command);
+			response = serialPort.readBytes(2, 100);
+			return response[0];
+		} catch (SerialPortTimeoutException | SerialPortException e) {
+			return 1;
 		}
-//		System.out.println("getMovingState: " + ret);
-//		return ret;
-		return 0;
 	}
 }

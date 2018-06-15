@@ -16,17 +16,28 @@ public class BodyMovement {
 	public static void makeMove() {
 		if (!currentlyInMotion) {
 			switch (Status.getBodyMovementType()) {
+			case RISE:
+				rise();
+				break;
+			case CROUCH:
+				crouch();
+				break;
 			default:
 				break;
 			}
 		}
 	}
 
-	public static boolean standUp() {
+	public static void rise() {
 		if (currentlyInMotion) {
-			return false;
+			System.out.println("in motion");
+			return;
 		}
-		System.out.println("standUp() - start");
+		if (!Status.isSleepMode()) {
+			System.out.println("already up");
+			return;
+		}
+		System.out.println("rise - start");
 		currentlyInMotion = true;
 		ServoController.setBodySpeed(200);
 		for (int i = 20; i <= SUSPENSION_HEIGHT; i = i + 10) {
@@ -44,25 +55,29 @@ public class BodyMovement {
 		ServoController.setBodySpeed(Status.getBodySpeed());
 
 		legLeftMiddle.setFootPosition(INNER_LEG_STARTING_POSITION_X, INNER_LEG_STARTING_POSITION_Y, SUSPENSION_HEIGHT - STEP_HEIGHT);
-//		waitTillEndOfMove();
+		waitTillEndOfMove();
 		legLeftMiddle.setFootPosition(INNER_LEG_STARTING_POSITION_X, INNER_LEG_STARTING_POSITION_Y, SUSPENSION_HEIGHT);
-//		waitTillEndOfMove();
+		waitTillEndOfMove();
 		legRightMiddle.setFootPosition(INNER_LEG_STARTING_POSITION_X, INNER_LEG_STARTING_POSITION_Y, SUSPENSION_HEIGHT - STEP_HEIGHT);
-//		waitTillEndOfMove();
+		waitTillEndOfMove();
 		legRightMiddle.setFootPosition(INNER_LEG_STARTING_POSITION_X, INNER_LEG_STARTING_POSITION_Y, SUSPENSION_HEIGHT);
-//		waitTillEndOfMove();
-		System.out.println("standUp() - end");
+		waitTillEndOfMove();
+		System.out.println("rise - end");
 		currentlyInMotion = false;
 		Status.setSleepMode(false);
-		return true;
 	}
 
 	
-	public static boolean lieDown() {
+	public static void crouch() {
 		if (currentlyInMotion) {
-			return false;
+			System.out.println("in motion");
+			return;
 		}
-		System.out.println("lieDown() - start");
+		if (Status.isSleepMode()) {
+			System.out.println("already down");
+			return;
+		}
+		System.out.println("crouch - start");
 		currentlyInMotion = true;
 		ServoController.setBodySpeed(Status.getBodySpeed());
 
@@ -88,20 +103,26 @@ public class BodyMovement {
 		}
 
 		waitTillEndOfMove();
-		System.out.println("lieDown() - end");
+		System.out.println("crouch - end");
 		currentlyInMotion = false;
 		Status.setSleepMode(true);
-		return true;
 	}
 
-	private static void waitTillEndOfMove() {
-		boolean ready = false;
-		while(!ready) {
-			System.out.println("|");
-			if (ServoController.getMovingState() == 0) {
-				ready = true;
+	public static void waitTillEndOfMove() {
+		try {
+			int i = 0;
+			while (i < 3) {
+				System.out.print(".");
+				if (ServoController.getMovingState() == 0) {
+					i++;
+				}
+				Thread.sleep(20);
 			}
+			
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
+		System.out.println();
 		System.out.println("waitTillEndOfMove() end");
 	}
 }
