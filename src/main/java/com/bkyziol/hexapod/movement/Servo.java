@@ -29,9 +29,6 @@ public abstract class Servo {
 		if (value < this.max && value > this.min) {
 			this.current = value;
 			ServoController.setTarget(this.channel, this.current);
-//			System.out.println(this.channel + " -> " + this.current);
-//		} else {
-//			System.out.println("Out of bound");
 		}
 	}
 

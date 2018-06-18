@@ -54,6 +54,7 @@ public class Main {
 		connection = connectionBuilder.build();
 		connection.connect();
 		Status.setConnection(connection);
+		BodyMovement.initPosition();
 		startCameraTimer();
 		startMovementTimer();
 	}
@@ -71,8 +72,12 @@ public class Main {
 				} else if (lastMessageTimestamp + 3000 < currentTimestamp) {
 					Status.setHeadMovementType(HeadMovementType.STAND_BY);
 				} else {
-					HeadMovement.makeMove();
-					BodyMovement.makeMove();
+					try {
+						HeadMovement.makeMove();
+						BodyMovement.makeMove();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}
 			}
 		};

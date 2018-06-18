@@ -20,7 +20,7 @@ public class Body {
 			false,
 			new LegServo(4, 7850, 4600, 7850, 1973),
 			new LegServo(10, 7100, 4000, 8000, 2132),
-			new LegServo(14, 3300, 4200, 8000, 1973)
+			new LegServo(16, 3300, 4200, 8000, 1973)
 		);
 
 	public static final Leg legRightFront = new Leg(

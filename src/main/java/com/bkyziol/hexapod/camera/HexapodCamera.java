@@ -95,11 +95,11 @@ public final class HexapodCamera {
 			@Override
 			public void run() {
 				while (camera == null || !camera.isOpened()) {
-					System.out.println("OpenCV version:" + Core.VERSION);
+					System.out.println("OpenCV version: " + Core.VERSION);
 					camera = new VideoCapture(0);
 					camera.set(Videoio.CV_CAP_PROP_FRAME_WIDTH, frameWidth);
 					camera.set(Videoio.CV_CAP_PROP_FRAME_HEIGHT, frameHeight);
-					System.out.println("Camera connected");
+					System.out.println("Camera: OK");
 				}
 				Runnable frameGrabber = new Runnable() {
 					@Override

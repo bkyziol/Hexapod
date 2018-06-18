@@ -30,10 +30,11 @@ public class ServoController {
 				clearErrors();
 				setHeadSpeed(0);
 				setBodySpeed(0);
-				System.out.println("Connection to the servo controller is open");
+				System.out.println("Servo controller: OK");
 			}
 		} catch (SerialPortException e) {
-			System.out.println("Error while opening connection to the servo controller: " + e);
+			System.out.println("Servo controller: ERROR");
+			System.out.println(e);
 		}
 	}
 
