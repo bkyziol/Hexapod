@@ -6,7 +6,7 @@ public class Leg {
 	private final int THIGH_LENGTH = 80;
 	private final int CALF_LENGTH = 110;
 
-	private final boolean legIsOnTheRightSide;
+	private final LegLocation location;
 
 	private final LegServo hip;
 	private final LegServo thigh;
@@ -14,8 +14,8 @@ public class Leg {
 
 	private final FootPosition footPosition = new FootPosition();
 
-	public Leg(boolean legIsOnTheRightSide, LegServo hip, LegServo thigh, LegServo calf) {
-		this.legIsOnTheRightSide = legIsOnTheRightSide;
+	public Leg(LegLocation location, LegServo hip, LegServo thigh, LegServo calf) {
+		this.location = location;
 		this.hip = hip;
 		this.thigh = thigh;
 		this.calf = calf;
@@ -49,7 +49,7 @@ public class Leg {
 			int hipAngleInUS;
 			int thighAnlgleInUS;
 			int calfAngleInUS;
-			if (legIsOnTheRightSide) {
+			if (location == LegLocation.RIGHT_FRONT || location == LegLocation.RIGHT_MIDDLE || location == LegLocation.RIGHT_REAR) {
 				hipAngleInUS = (int) (hip.getZeroAngleValue() - hipAngleInRadians * hip.getConverterValue());
 				thighAnlgleInUS = (int) (thigh.getZeroAngleValue() + thighAnlgleInRadians * thigh.getConverterValue());
 				calfAngleInUS = (int) (calf.getZeroAngleValue() - calfAngleInRadians * calf.getConverterValue());
@@ -96,5 +96,9 @@ public class Leg {
 
 	public FootPosition getFootPosition() {
 		return footPosition;
+	}
+
+	public LegLocation getLocation() {
+		return location;
 	}
 }
