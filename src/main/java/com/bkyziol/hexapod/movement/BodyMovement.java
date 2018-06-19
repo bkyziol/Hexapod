@@ -84,7 +84,7 @@ public class BodyMovement {
 				strafeRight();
 				break;
 			case TURN_LEFT:
-				turnLeft(10);
+				turnLeft(15);
 				break;
 			case TURN_RIGHT:
 			default:
@@ -148,6 +148,7 @@ public class BodyMovement {
 		Thread.sleep(100);
 		legRightMiddle.lowerFoot();
 		Thread.sleep(100);
+
 		currentlyInMotion = false;
 		Status.setSleepMode(false);
 		Thread.sleep(2000);
@@ -184,6 +185,7 @@ public class BodyMovement {
 			Thread.sleep(20);
 		}
 		Thread.sleep(750);
+
 		currentlyInMotion = false;
 		Status.setSleepMode(true);
 	}
@@ -192,6 +194,8 @@ public class BodyMovement {
 		if (!isMovementPossible()) {
 			return;
 		}
+
+		currentlyInMotion = true;
 		ServoController.setBodySpeed(100);
 
 		legRightFront.riseFoot();
@@ -221,6 +225,7 @@ public class BodyMovement {
 		legLeftFront.lowerFoot();
 		legRightMiddle.lowerFoot();
 		legLeftRear.lowerFoot();
+
 		currentlyInMotion = false;
 	}
 
@@ -228,6 +233,8 @@ public class BodyMovement {
 		if (!isMovementPossible()) {
 			return;
 		}
+
+		currentlyInMotion = true;
 		ServoController.setBodySpeed(100);
 
 		riseFoots(legRightFront, legLeftMiddle, legRightRear);
@@ -318,6 +325,8 @@ public class BodyMovement {
 		if (!isMovementPossible()) {
 			return;
 		}
+
+		currentlyInMotion = true;
 		ServoController.setBodySpeed(100);
 
 		riseFoots(legRightFront, legLeftMiddle, legRightRear);
@@ -405,6 +414,11 @@ public class BodyMovement {
 	}
 
 	private static void strafeRight() throws InterruptedException{
+		if (!isMovementPossible()) {
+			return;
+		}
+
+		currentlyInMotion = true;
 		ServoController.setBodySpeed(100);;
 
 		riseFoots(legRightFront, legLeftMiddle, legRightRear);
@@ -460,9 +474,16 @@ public class BodyMovement {
 
 		takeStartingPosition();
 		Thread.sleep(200);
+
+		currentlyInMotion = false;
 	}
 
 	private static void strafeLeft() throws InterruptedException{
+		if (!isMovementPossible()) {
+			return;
+		}
+
+		currentlyInMotion = true;
 		ServoController.setBodySpeed(100);;
 
 		riseFoots(legLeftFront, legRightMiddle, legLeftRear);
@@ -518,6 +539,8 @@ public class BodyMovement {
 
 		takeStartingPosition();
 		Thread.sleep(200);
+
+		currentlyInMotion = false;
 	}
 
 	private static void turnLeft(double angleOfRotation) throws InterruptedException {
@@ -525,28 +548,107 @@ public class BodyMovement {
 			return;
 		}
 
+		currentlyInMotion = true;
 		ServoController.setBodySpeed(100);
 
-		System.out.println("turnLeft");
-		while (Status.getBodyMovementType() == BodyMovementType.TURN_LEFT) {
-			for (int i = 1; i <= angleOfRotation; i = i + 1) {
-				rotationByAngle(i, legLeftFront);
-				rotationByAngle(-i, legRightMiddle);
-				rotationByAngle(i, legLeftRear);
-				rotationByAngle(-i, legRightFront);
-				rotationByAngle(i, legLeftMiddle);
-				rotationByAngle(-i, legRightRear);
-				Thread.sleep(500);
-			}
-			Thread.sleep(800);
+		System.out.println("turnLeft - start");
+//		while (Status.getBodyMovementType() == BodyMovementType.TURN_LEFT) {
+		System.out.println("clockwise");
+		for (int i = 0; i <= 10; i += 1) {
+//			rotationByAngle(true, 1, legLeftFront);
+//			rotationByAngle(true, 1, legRightFront);
+//			rotationByAngle(true, 1, legLeftRear);
+//			rotationByAngle(true, 1, legRightRear);
+			rotationByAngle(true, 1, legLeftMiddle);
+//			rotationByAngle(true, 1, legRightMiddle);
+			Thread.sleep(500);
 		}
+		System.out.println("counter clockwise");
+		for (int i = 0; i <= 20; i += 1) {
+//			rotationByAngle(false, 1, legLeftFront);
+//			rotationByAngle(false, 1, legRightFront);
+//			rotationByAngle(false, 1, legLeftRear);
+//			rotationByAngle(false, 1, legRightRear);
+			rotationByAngle(false, 1, legLeftMiddle);
+//			rotationByAngle(false, 1, legRightMiddle);
+			Thread.sleep(500);
+		}
+		 System.out.println("clockwise");
+		for (int i = 0; i <= 10; i += 1) {
+//			rotationByAngle(true, 1, legLeftFront);
+//			rotationByAngle(true, 1, legRightFront);
+//			rotationByAngle(true, 1, legLeftRear);
+//			rotationByAngle(true, 1, legRightRear);
+			rotationByAngle(true, 1, legLeftMiddle);
+//			rotationByAngle(true, 1, legRightMiddle);
+			Thread.sleep(500);
+		}
+			Thread.sleep(2000);
+//			takeStartingPosition();
+			Thread.sleep(500);
+//		}
+		System.out.println("turnLeft - end");
 
-		takeStartingPosition();
-		Thread.sleep(200);
+		currentlyInMotion = false;
 	}
 
-	private static void rotationByAngle(double angle, Leg leg) {
-		FootPosition newFootPosition = calculateForTurn(angle, leg.getFootPosition());
+	private static void rotationByAngle(boolean clockwise, double angle, Leg leg) {
+		FootPosition footPosition = leg.getFootPosition();
+		double X = footPosition.getX();
+		double Y = footPosition.getY();
+		
+		if (angle <= 0) {
+			return;
+		}
+		FootPosition newFootPosition = null;
+		if (leg.getLocation() == LegLocation.LEFT_FRONT) {
+			if (clockwise) {
+				newFootPosition = calculateForTurn(angle, X, Y, true);
+			} else {
+				newFootPosition = calculateForTurn(angle, X, Y, false);
+			}
+		}
+		if (leg.getLocation() == LegLocation.RIGHT_FRONT) {
+			if (clockwise) {
+				newFootPosition = calculateForTurn(angle, X, Y, false);
+			} else {
+				newFootPosition = calculateForTurn(angle, X, Y, true);
+			}
+		}
+		if (leg.getLocation() == LegLocation.LEFT_REAR) {
+			if (clockwise) {
+				newFootPosition = calculateForTurn(angle, X, -Y, false);
+				newFootPosition.setY(-newFootPosition.getY());
+			} else {
+				newFootPosition = calculateForTurn(angle, X, -Y, true);
+				newFootPosition.setY(-newFootPosition.getY());
+			}
+		}
+		if (leg.getLocation() == LegLocation.RIGHT_REAR) {
+			if (clockwise) {
+				newFootPosition = calculateForTurn(angle, X, -Y, true);
+				newFootPosition.setY(-newFootPosition.getY());
+			} else {
+				newFootPosition = calculateForTurn(angle, X, -Y, false);
+				newFootPosition.setY(-newFootPosition.getY());
+			}
+		}
+		if (leg.getLocation() == LegLocation.LEFT_MIDDLE) {
+			if (clockwise) {
+				newFootPosition = calculateForTurn2(angle, X, Y, true);
+			} else {
+				newFootPosition = calculateForTurn2(angle, X, Y, false);
+			}
+		}
+		if (leg.getLocation() == LegLocation.RIGHT_MIDDLE) {
+			if (clockwise) {
+				newFootPosition = calculateForTurn2(angle, X, -Y, true);
+				newFootPosition.setY(newFootPosition.getY());
+			} else {
+				newFootPosition = calculateForTurn2(angle, X, -Y, false);
+				newFootPosition.setY(newFootPosition.getY());
+			}
+		}
 		leg.setFootPosition(newFootPosition.getX(), newFootPosition.getY());
 	}
 
