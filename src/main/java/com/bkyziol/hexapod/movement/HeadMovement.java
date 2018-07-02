@@ -5,7 +5,7 @@ public class HeadMovement {
 	private static final HeadServo verticalServo = Head.getVerticalServo();
 	private static final HeadServo horizontalServo = Head.getHorizontalServo();
 
-	public static void makeMove() {
+	public static void makeMove() throws InterruptedException {
 		int speed = Status.getHeadSpeed();
 		switch (Status.getHeadMovementType()) {
 		case CENTER:
@@ -19,10 +19,10 @@ public class HeadMovement {
 			horizontalServo.increaseAngle(speed);
 			break;
 		case UP:
-			verticalServo.increaseAngle(speed);
+			verticalServo.decreaseAngle(speed);
 			break;
 		case DOWN:
-			verticalServo.decreaseAngle(speed);
+			verticalServo.increaseAngle(speed);
 			break;
 		default:
 			break;

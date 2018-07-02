@@ -33,13 +33,13 @@ public class Body {
 	public static final Leg legRightMiddle = new Leg(
 			LegLocation.RIGHT_MIDDLE,
 			new LegServo(3, 6200, 4400, 8000, 2100),
-			new LegServo(9, 5400, 4000, 8000, 2036),
+			new LegServo(9, 5200, 4000, 8000, 2036),
 			new LegServo(15, 9000, 4500, 8000, 2355)
 		);
 
 	public static final Leg legRightRear = new Leg(
 			LegLocation.RIGHT_REAR,
-			new LegServo(5, 4200, 4050, 7500, 2100),
+			new LegServo(5, 4200, 4050, 8000, 2400),
 			new LegServo(11, 5200, 4000, 8000, 2100),
 			new LegServo(17, 8750, 4100, 8000, 2196)
 		);
