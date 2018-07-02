@@ -9,8 +9,11 @@ public class Status {
 	private static HeadMovementType headMovementType;
 	private static BodyMovementType bodyMovementType;
 	private static boolean sleepMode = true;
+	private static boolean lookAroundMode = false;
 	private static long lastStatusTimestamp;
 	private static long lastMoveTimestamp;
+	private static long lastFaceDetectedTimestamp;
+	private static long nextRandomMoveTimestamp;
 	private static int bodySpeed;
 	private static int headSpeed;
 
@@ -64,6 +67,14 @@ public class Status {
 		sendStatusMessage();
 	}
 
+	public static boolean isLookAroundMode() {
+		return lookAroundMode;
+	}
+
+	public static void setLookAroundMode(boolean lookAroundMode) {
+		Status.lookAroundMode = lookAroundMode;
+	}
+
 	public static long getLastStatusTimestamp() {
 		return lastStatusTimestamp;
 	}
@@ -74,6 +85,22 @@ public class Status {
 
 	public static void setLastMoveTimestamp(long lastMoveTimestamp) {
 		Status.lastMoveTimestamp = lastMoveTimestamp;
+	}
+
+	public static long getLastFaceDetectedTimestamp() {
+		return lastFaceDetectedTimestamp;
+	}
+
+	public static void setLastFaceDetectedTimestamp(long lastFaceDetectedTimestamp) {
+		Status.lastFaceDetectedTimestamp = lastFaceDetectedTimestamp;
+	}
+
+	public static long getNextRandomMoveTimestamp() {
+		return nextRandomMoveTimestamp;
+	}
+
+	public static void setNextRandomMoveTimestamp(long nextRandomMoveTimestamp) {
+		Status.nextRandomMoveTimestamp = nextRandomMoveTimestamp;
 	}
 
 	public static int getBodySpeed() {
