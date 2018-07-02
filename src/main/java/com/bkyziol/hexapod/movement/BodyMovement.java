@@ -3,8 +3,8 @@ package com.bkyziol.hexapod.movement;
 import static com.bkyziol.hexapod.movement.Body.*;
 import static com.bkyziol.hexapod.movement.utils.CalculationUtils.*;
 
-import java.io.IOException;
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 
 public class BodyMovement {
@@ -19,113 +19,25 @@ public class BodyMovement {
 	private static final int REAR_LEG_STARTING_POSITION_Y = -60;
 
 	private static final int STRAFE_LENGTH = 60;
-	private static final int STRIDE_LENGTH = 100;
+	private static final int STRIDE_LENGTH = 80;
 
 	private static double rightFactor;
 	private static double leftFactor;
 
-	private static final int SPEED = 100;
-	private static final int DELAY = 20;
 	private static final int PRECISION = 10;
 
-	private static boolean currentlyInMotion = false;
+	private static boolean currentlyInMotion;
 
-	public static void makeMove() throws InterruptedException {
-		if (!currentlyInMotion) {
-			switch (Status.getBodyMovementType()) {
-			case BACKWARD:
-				moveBackward();
-				break;
-			case CROUCH:
-				crouch();
-				break;
-			case FORWARD:
-				leftFactor = 1;
-				rightFactor = 1;
-				moveForward();
-				break;
-			case HARD_LEFT:
-				leftFactor = 0.1;
-				rightFactor = 1;
-				moveForward();
-				break;
-			case HARD_RIGHT:
-				leftFactor = 1;
-				rightFactor = 0.1;
-				moveForward();
-				break;
-			case LEFT:
-				leftFactor = 0.4;
-				rightFactor = 1;
-				moveForward();
-				break;
-			case RIGHT:
-				leftFactor = 1;
-				rightFactor = 0.4;
-				moveForward();
-				break;
-			case RISE:
-				rise();
-				break;
-			case SLIGHTLY_LEFT:
-				leftFactor = 0.7;
-				rightFactor = 1;
-				moveForward();
-				break;
-			case SLIGHTLY_RIGHT:
-				leftFactor = 1;
-				rightFactor = 0.7;
-				moveForward();
-				break;
-			case STRAFE_LEFT:
-				strafeLeft();
-				break;
-			case STRAFE_RIGHT:
-				strafeRight();
-				break;
-			case TURN_LEFT:
-				turnLeft(15);
-				break;
-			case TURN_RIGHT:
-			default:
-				break;
-			}
-		}
-	}
-
-	public static void initPosition() {
+	public static Move initPosition = () -> {
 		legLeftFront.setFootPosition(FRONT_LEG_STARTING_POSITION_X, FRONT_LEG_STARTING_POSITION_Y, 20);
 		legLeftMiddle.setFootPosition(80, 45, 20);
 		legLeftRear.setFootPosition(FRONT_LEG_STARTING_POSITION_X, REAR_LEG_STARTING_POSITION_Y, 20);
 		legRightFront.setFootPosition(FRONT_LEG_STARTING_POSITION_X, FRONT_LEG_STARTING_POSITION_Y, 20);
 		legRightMiddle.setFootPosition(80, 45, 20);
 		legRightRear.setFootPosition(REAR_LEG_STARTING_POSITION_X, REAR_LEG_STARTING_POSITION_Y, 20);
-	}
+	};
 
-
-	private static void riseFoots(Leg... legs) throws InterruptedException {
-		for (Leg leg : legs) {
-			leg.riseFoot();
-		}
-	}
-
-
-	private static void lowerFoots(Leg... legs) throws InterruptedException {
-		for (Leg leg : legs) {
-			leg.lowerFoot();
-		}
-	}
-
-	public static void rise() throws InterruptedException {
-		if (currentlyInMotion) {
-			return;
-		}
-		if (!Status.isSleepMode()) {
-			return;
-		}
-
-		currentlyInMotion = true;
-		ServoController.setBodySpeed(SPEED);
+	public static Move rise = () -> {
 		for (int i = 20; i <= SUSPENSION_HEIGHT; i += PRECISION) {
 			legLeftFront.setFootPosition(FRONT_LEG_STARTING_POSITION_X, FRONT_LEG_STARTING_POSITION_Y, i);
 			legLeftMiddle.setFootPosition(80, 45, i);
@@ -148,20 +60,10 @@ public class BodyMovement {
 		Thread.sleep(100);
 		legRightMiddle.lowerFoot();
 		Thread.sleep(100);
-
-		currentlyInMotion = false;
 		Status.setSleepMode(false);
-		Thread.sleep(2000);
-	}
+	};
 
-	public static void crouch() throws InterruptedException {
-		if (!isMovementPossible()) {
-			return;
-		}
-
-		currentlyInMotion = true;
-		ServoController.setBodySpeed(SPEED);
-
+	public static Move crouch = () -> {
 		legLeftMiddle.riseFoot();
 		Thread.sleep(100);
 		legLeftMiddle.setFootPosition(80, 45);
@@ -186,35 +88,22 @@ public class BodyMovement {
 		}
 		Thread.sleep(750);
 
-		currentlyInMotion = false;
 		Status.setSleepMode(true);
-	}
+	};
 
-	public static void takeStartingPosition() throws InterruptedException{
-		if (!isMovementPossible()) {
-			return;
-		}
-
-		currentlyInMotion = true;
-		ServoController.setBodySpeed(100);
-
-		legRightFront.riseFoot();
-		legLeftMiddle.riseFoot();
-		legRightRear.riseFoot();
+	public static Move takeStartingPosition = () -> {
+		riseFoots(legRightFront, legLeftMiddle, legRightRear);
 		Thread.sleep(200);
+
 		legRightFront.setFootPosition(FRONT_LEG_STARTING_POSITION_X, FRONT_LEG_STARTING_POSITION_Y);
 		legLeftMiddle.setFootPosition(MIDDLE_LEG_STARTING_POSITION_X, MIDDLE_LEG_STARTING_POSITION_Y);
 		legRightRear.setFootPosition(REAR_LEG_STARTING_POSITION_X, REAR_LEG_STARTING_POSITION_Y);
 		Thread.sleep(200);
 
-		legRightFront.lowerFoot();
-		legLeftMiddle.lowerFoot();
-		legRightRear.lowerFoot();
+		lowerFoots(legRightFront, legLeftMiddle, legRightRear);
 		Thread.sleep(200);
 
-		legLeftFront.riseFoot();
-		legRightMiddle.riseFoot();
-		legLeftRear.riseFoot();
+		riseFoots(legLeftFront, legRightMiddle, legLeftRear);
 		Thread.sleep(200);
 
 		legLeftFront.setFootPosition(FRONT_LEG_STARTING_POSITION_X, FRONT_LEG_STARTING_POSITION_Y);
@@ -222,21 +111,25 @@ public class BodyMovement {
 		legLeftRear.setFootPosition(REAR_LEG_STARTING_POSITION_X, REAR_LEG_STARTING_POSITION_Y);
 		Thread.sleep(200);
 
-		legLeftFront.lowerFoot();
-		legRightMiddle.lowerFoot();
-		legLeftRear.lowerFoot();
+		lowerFoots(legLeftFront, legRightMiddle, legLeftRear);
+		Thread.sleep(200);
+	};
 
-		currentlyInMotion = false;
-	}
+	private static Move stepInPlace = () -> {
+		riseFoots(legRightFront, legLeftMiddle, legRightRear);
+		Thread.sleep(200);
 
-	private static void moveForward() throws InterruptedException {
-		if (!isMovementPossible()) {
-			return;
-		}
+		lowerFoots(legRightFront, legLeftMiddle, legRightRear);
+		Thread.sleep(200);
 
-		currentlyInMotion = true;
-		ServoController.setBodySpeed(100);
+		riseFoots(legLeftFront, legRightMiddle, legLeftRear);
+		Thread.sleep(200);
 
+		lowerFoots(legLeftFront, legRightMiddle, legLeftRear);
+		Thread.sleep(200);
+	};
+
+	private static Move moveForward = () -> {
 		riseFoots(legRightFront, legLeftMiddle, legRightRear);
 		Thread.sleep(200);
 
@@ -269,7 +162,7 @@ public class BodyMovement {
 				legRightRear.setFootPosition(REAR_LEG_STARTING_POSITION_X, -i * rightFactor - 20);
 				Thread.sleep(20);
 			}
-			Thread.sleep(800);
+			Thread.sleep(600);
 
 			lowerFoots(legLeftFront, legRightMiddle, legLeftRear);
 			Thread.sleep(300);
@@ -281,54 +174,23 @@ public class BodyMovement {
 				for (int i = 0; i <= STRIDE_LENGTH; i += PRECISION) {
 					legLeftFront.setFootPosition(FRONT_LEG_STARTING_POSITION_X, (STRIDE_LENGTH - i) * leftFactor + 10);
 					legRightMiddle.setFootPosition(MIDDLE_LEG_STARTING_POSITION_X, (STRIDE_LENGTH / 2 - i) * rightFactor - 10);
-					legLeftRear.setFootPosition(REAR_LEG_STARTING_POSITION_X, -i * leftFactor -20 );
+					legLeftRear.setFootPosition(REAR_LEG_STARTING_POSITION_X, -i * leftFactor - 20);
 
 					legRightFront.setFootPosition(FRONT_LEG_STARTING_POSITION_X, i * rightFactor + 10);
 					legLeftMiddle.setFootPosition(MIDDLE_LEG_STARTING_POSITION_X, (-STRIDE_LENGTH / 2 + i) * leftFactor - 10);
 					legRightRear.setFootPosition(REAR_LEG_STARTING_POSITION_X, (-STRIDE_LENGTH + i) * rightFactor - 20);
 					Thread.sleep(20);
 				}
-				Thread.sleep(800);
+				Thread.sleep(600);
 
 				lowerFoots(legRightFront, legLeftMiddle, legRightRear);
 				Thread.sleep(300);
 			}
-			if (!isStillMovingForward()) {
-				riseFoots(legLeftFront, legRightMiddle, legLeftRear);
-				Thread.sleep(200);
-
-				legLeftFront.setFootPosition(FRONT_LEG_STARTING_POSITION_X, FRONT_LEG_STARTING_POSITION_Y);
-				legRightMiddle.setFootPosition(MIDDLE_LEG_STARTING_POSITION_X, MIDDLE_LEG_STARTING_POSITION_Y);
-				legLeftRear.setFootPosition(REAR_LEG_STARTING_POSITION_X, REAR_LEG_STARTING_POSITION_Y);
-				Thread.sleep(200);
-
-				lowerFoots(legLeftFront, legRightMiddle, legLeftRear);
-				Thread.sleep(300);
-			}
 		}
+		takeStartingPosition.execute();
+	};
 
-		riseFoots(legRightFront, legLeftMiddle, legRightRear);
-		Thread.sleep(200);
-
-		legRightFront.setFootPosition(FRONT_LEG_STARTING_POSITION_X, FRONT_LEG_STARTING_POSITION_Y);
-		legLeftMiddle.setFootPosition(MIDDLE_LEG_STARTING_POSITION_X, MIDDLE_LEG_STARTING_POSITION_Y);
-		legRightRear.setFootPosition(REAR_LEG_STARTING_POSITION_X, REAR_LEG_STARTING_POSITION_Y);
-		Thread.sleep(200);
-
-		lowerFoots(legRightFront, legLeftMiddle, legRightRear);
-		Thread.sleep(300);
-
-		currentlyInMotion = false;
-	}
-
-	private static void moveBackward() throws InterruptedException {
-		if (!isMovementPossible()) {
-			return;
-		}
-
-		currentlyInMotion = true;
-		ServoController.setBodySpeed(100);
-
+	private static Move moveBackward = () -> {
 		riseFoots(legRightFront, legLeftMiddle, legRightRear);
 		Thread.sleep(200);
 
@@ -361,7 +223,7 @@ public class BodyMovement {
 				legRightRear.setFootPosition(REAR_LEG_STARTING_POSITION_X, -STRIDE_LENGTH + i - 20);
 				Thread.sleep(20);
 			}
-			Thread.sleep(800);
+			Thread.sleep(600);
 
 			lowerFoots(legLeftFront, legRightMiddle, legLeftRear);
 			Thread.sleep(300);
@@ -380,47 +242,16 @@ public class BodyMovement {
 					legRightRear.setFootPosition(REAR_LEG_STARTING_POSITION_X, -i -20);
 					Thread.sleep(20);
 				}
-				Thread.sleep(800);
+				Thread.sleep(600);
 
 				lowerFoots(legRightFront, legLeftMiddle, legRightRear);
 				Thread.sleep(300);
 			}
-			if (Status.getBodyMovementType() != BodyMovementType.BACKWARD) {
-				riseFoots(legLeftFront, legRightMiddle, legLeftRear);
-				Thread.sleep(200);
-
-				legLeftFront.setFootPosition(FRONT_LEG_STARTING_POSITION_X, FRONT_LEG_STARTING_POSITION_Y);
-				legRightMiddle.setFootPosition(MIDDLE_LEG_STARTING_POSITION_X, MIDDLE_LEG_STARTING_POSITION_Y);
-				legLeftRear.setFootPosition(REAR_LEG_STARTING_POSITION_X, REAR_LEG_STARTING_POSITION_Y);
-				Thread.sleep(200);
-
-				lowerFoots(legLeftFront, legRightMiddle, legLeftRear);
-				Thread.sleep(300);
-			}
 		}
+		takeStartingPosition.execute();
+	};
 
-		riseFoots(legRightFront, legLeftMiddle, legRightRear);
-		Thread.sleep(200);
-
-		legRightFront.setFootPosition(FRONT_LEG_STARTING_POSITION_X, FRONT_LEG_STARTING_POSITION_Y);
-		legLeftMiddle.setFootPosition(MIDDLE_LEG_STARTING_POSITION_X, MIDDLE_LEG_STARTING_POSITION_Y);
-		legRightRear.setFootPosition(REAR_LEG_STARTING_POSITION_X, REAR_LEG_STARTING_POSITION_Y);
-		Thread.sleep(200);
-
-		lowerFoots(legRightFront, legLeftMiddle, legRightRear);
-		Thread.sleep(300);
-
-		currentlyInMotion = false;
-	}
-
-	private static void strafeRight() throws InterruptedException{
-		if (!isMovementPossible()) {
-			return;
-		}
-
-		currentlyInMotion = true;
-		ServoController.setBodySpeed(100);;
-
+	private static Move strafeRight = () -> {
 		riseFoots(legRightFront, legLeftMiddle, legRightRear);
 		Thread.sleep(200);
 
@@ -459,7 +290,6 @@ public class BodyMovement {
 				legLeftMiddle.setFootPosition(MIDDLE_LEG_STARTING_POSITION_X - STRAFE_LENGTH / 2, MIDDLE_LEG_STARTING_POSITION_Y);
 				legRightRear.setFootPosition(REAR_LEG_STARTING_POSITION_X + STRAFE_LENGTH / 2, REAR_LEG_STARTING_POSITION_Y);
 
-
 				for (int i = -STRAFE_LENGTH / 2; i <= STRAFE_LENGTH / 2; i += PRECISION) {
 					legLeftFront.setFootPosition(FRONT_LEG_STARTING_POSITION_X + i, FRONT_LEG_STARTING_POSITION_Y);
 					legRightMiddle.setFootPosition(MIDDLE_LEG_STARTING_POSITION_X - i, MIDDLE_LEG_STARTING_POSITION_Y);
@@ -471,21 +301,11 @@ public class BodyMovement {
 				Thread.sleep(200);
 			}
 		}
-
-		takeStartingPosition();
 		Thread.sleep(200);
+		takeStartingPosition.execute();
+	};
 
-		currentlyInMotion = false;
-	}
-
-	private static void strafeLeft() throws InterruptedException{
-		if (!isMovementPossible()) {
-			return;
-		}
-
-		currentlyInMotion = true;
-		ServoController.setBodySpeed(100);;
-
+	private static Move strafeLeft = () -> {
 		riseFoots(legLeftFront, legRightMiddle, legLeftRear);
 		Thread.sleep(200);
 
@@ -524,7 +344,6 @@ public class BodyMovement {
 				legRightMiddle.setFootPosition(MIDDLE_LEG_STARTING_POSITION_X - STRAFE_LENGTH / 2, MIDDLE_LEG_STARTING_POSITION_Y);
 				legLeftRear.setFootPosition(REAR_LEG_STARTING_POSITION_X + STRAFE_LENGTH / 2, REAR_LEG_STARTING_POSITION_Y);
 
-
 				for (int i = -STRAFE_LENGTH / 2; i <= STRAFE_LENGTH / 2; i += PRECISION) {
 					legRightFront.setFootPosition(FRONT_LEG_STARTING_POSITION_X + i, FRONT_LEG_STARTING_POSITION_Y);
 					legLeftMiddle.setFootPosition(MIDDLE_LEG_STARTING_POSITION_X - i, MIDDLE_LEG_STARTING_POSITION_Y);
@@ -536,129 +355,452 @@ public class BodyMovement {
 				Thread.sleep(200);
 			}
 		}
-
-		takeStartingPosition();
 		Thread.sleep(200);
+		takeStartingPosition.execute();
+	};
 
-		currentlyInMotion = false;
-	}
+	public static Move turnLeft = () -> {
+		riseFoots(legLeftFront, legRightMiddle, legLeftRear);
+		Thread.sleep(250);
+		for (int i = 0; i <= 5; i++) {
+			rotationByAngle(false, 2, legLeftFront);
+			rotationByAngle(false, 2, legRightMiddle);
+			rotationByAngle(false, 2, legLeftRear);
 
-	private static void turnLeft(double angleOfRotation) throws InterruptedException {
-		if (!isMovementPossible()) {
+			rotationByAngle(true, 2, legRightFront);
+			rotationByAngle(true, 2, legRightRear);
+			rotationByAngle(true, 2, legLeftMiddle);
+			Thread.sleep(50);
+		}
+		lowerFoots(legLeftFront, legRightMiddle, legLeftRear);
+		Thread.sleep(250);
+
+		while (Status.getBodyMovementType() == BodyMovementType.TURN_LEFT) {
+			riseFoots(legRightFront, legLeftMiddle, legRightRear);
+			Thread.sleep(250);
+			for (int i = 0; i <= 10; i++) {
+				rotationByAngle(true, 2, legLeftFront);
+				rotationByAngle(true, 2, legRightMiddle);
+				rotationByAngle(true, 2, legLeftRear);
+
+				rotationByAngle(false, 2, legRightFront);
+				rotationByAngle(false, 2, legRightRear);
+				rotationByAngle(false, 2, legLeftMiddle);
+				Thread.sleep(50);
+			}
+			lowerFoots(legRightFront, legLeftMiddle, legRightRear);
+			Thread.sleep(250);
+
+			if (Status.getBodyMovementType() == BodyMovementType.TURN_LEFT) {
+				riseFoots(legLeftFront, legRightMiddle, legLeftRear);
+				Thread.sleep(250);
+				for (int i = 0; i <= 10; i++) {
+					rotationByAngle(false, 2, legLeftFront);
+					rotationByAngle(false, 2, legRightMiddle);
+					rotationByAngle(false, 2, legLeftRear);
+
+					rotationByAngle(true, 2, legRightFront);
+					rotationByAngle(true, 2, legRightRear);
+					rotationByAngle(true, 2, legLeftMiddle);
+					Thread.sleep(50);
+				}
+				lowerFoots(legLeftFront, legRightMiddle, legLeftRear);
+				Thread.sleep(250);
+			}
+		}
+		takeStartingPosition.execute();;
+	};
+
+	public static Move turnRight = () -> {
+		riseFoots(legRightFront, legLeftMiddle, legRightRear);
+		Thread.sleep(250);
+		for (int i = 0; i <= 5; i++) {
+			rotationByAngle(false, 2, legLeftFront);
+			rotationByAngle(false, 2, legRightMiddle);
+			rotationByAngle(false, 2, legLeftRear);
+
+			rotationByAngle(true, 2, legRightFront);
+			rotationByAngle(true, 2, legRightRear);
+			rotationByAngle(true, 2, legLeftMiddle);
+			Thread.sleep(50);
+		}
+		lowerFoots(legRightFront, legLeftMiddle, legRightRear);
+		Thread.sleep(250);
+
+		while (Status.getBodyMovementType() == BodyMovementType.TURN_RIGHT) {
+			riseFoots(legLeftFront, legRightMiddle, legLeftRear);
+			Thread.sleep(250);
+			for (int i = 0; i <= 10; i++) {
+				rotationByAngle(true, 2, legLeftFront);
+				rotationByAngle(true, 2, legRightMiddle);
+				rotationByAngle(true, 2, legLeftRear);
+
+				rotationByAngle(false, 2, legRightFront);
+				rotationByAngle(false, 2, legRightRear);
+				rotationByAngle(false, 2, legLeftMiddle);
+				Thread.sleep(50);
+			}
+			lowerFoots(legLeftFront, legRightMiddle, legLeftRear);
+			Thread.sleep(250);
+
+			if (Status.getBodyMovementType() == BodyMovementType.TURN_RIGHT) {
+				riseFoots(legRightFront, legLeftMiddle, legRightRear);
+				Thread.sleep(250);
+				for (int i = 0; i <= 10; i++) {
+					rotationByAngle(false, 2, legLeftFront);
+					rotationByAngle(false, 2, legRightMiddle);
+					rotationByAngle(false, 2, legLeftRear);
+
+					rotationByAngle(true, 2, legRightFront);
+					rotationByAngle(true, 2, legRightRear);
+					rotationByAngle(true, 2, legLeftMiddle);
+					Thread.sleep(50);
+				}
+				lowerFoots(legRightFront, legLeftMiddle, legRightRear);
+				Thread.sleep(250);
+			}
+		}
+		takeStartingPosition.execute();;
+	};
+
+	public static Move lookLeft = () -> {
+		riseFoots(legLeftFront, legRightMiddle, legLeftRear);
+		Thread.sleep(250);
+		for (int i = 0; i <= 5; i++) {
+			rotationByAngle(false, 2, legLeftFront);
+			rotationByAngle(false, 2, legRightMiddle);
+			rotationByAngle(false, 2, legLeftRear);
+
+			rotationByAngle(true, 2, legRightFront);
+			rotationByAngle(true, 2, legRightRear);
+			rotationByAngle(true, 2, legLeftMiddle);
+			Thread.sleep(50);
+		}
+		lowerFoots(legLeftFront, legRightMiddle, legLeftRear);
+		Thread.sleep(250);
+
+		riseFoots(legRightFront, legLeftMiddle, legRightRear);
+		Thread.sleep(250);
+		for (int i = 0; i <= 5; i++) {
+			rotationByAngle(true, 2, legLeftFront);
+			rotationByAngle(true, 2, legRightMiddle);
+			rotationByAngle(true, 2, legLeftRear);
+
+			rotationByAngle(false, 2, legRightFront);
+			rotationByAngle(false, 2, legRightRear);
+			rotationByAngle(false, 2, legLeftMiddle);
+			Thread.sleep(50);
+		}
+		lowerFoots(legRightFront, legLeftMiddle, legRightRear);
+		Thread.sleep(250);
+	};
+
+	public static Move lookRight = () -> {
+		riseFoots(legRightFront, legLeftMiddle, legRightRear);
+		Thread.sleep(250);
+		for (int i = 0; i <= 5; i++) {
+			rotationByAngle(false, 2, legLeftFront);
+			rotationByAngle(false, 2, legRightMiddle);
+			rotationByAngle(false, 2, legLeftRear);
+
+			rotationByAngle(true, 2, legRightFront);
+			rotationByAngle(true, 2, legRightRear);
+			rotationByAngle(true, 2, legLeftMiddle);
+			Thread.sleep(50);
+		}
+		lowerFoots(legRightFront, legLeftMiddle, legRightRear);
+		Thread.sleep(250);
+
+		riseFoots(legLeftFront, legRightMiddle, legLeftRear);
+		Thread.sleep(250);
+		for (int i = 0; i <= 5; i++) {
+			rotationByAngle(true, 2, legLeftFront);
+			rotationByAngle(true, 2, legRightMiddle);
+			rotationByAngle(true, 2, legLeftRear);
+
+			rotationByAngle(false, 2, legRightFront);
+			rotationByAngle(false, 2, legRightRear);
+			rotationByAngle(false, 2, legLeftMiddle);
+			Thread.sleep(50);
+		}
+		lowerFoots(legLeftFront, legRightMiddle, legLeftRear);
+		Thread.sleep(250);
+	};
+
+	public static Move rotateLeft = () -> {
+		for (int i = 0; i <= 5; i++) {
+			rotationByAngle(true, 2, legLeftFront);
+			rotationByAngle(true, 2, legRightMiddle);
+			rotationByAngle(true, 2, legLeftRear);
+
+			rotationByAngle(true, 2, legRightFront);
+			rotationByAngle(true, 2, legRightRear);
+			rotationByAngle(true, 2, legLeftMiddle);
+			Thread.sleep(20);
+		}
+		Thread.sleep(100);
+	};
+
+	public static Move rotateRight = () -> {
+		for (int i = 0; i <= 5; i++) {
+			rotationByAngle(false, 2, legLeftFront);
+			rotationByAngle(false, 2, legRightMiddle);
+			rotationByAngle(false, 2, legLeftRear);
+
+			rotationByAngle(false, 2, legRightFront);
+			rotationByAngle(false, 2, legRightRear);
+			rotationByAngle(false, 2, legLeftMiddle);
+			Thread.sleep(20);
+		}
+		Thread.sleep(100);
+	};
+
+	public static Move enableLookAroundPosition = () -> {
+		if (Status.isLookAroundMode()) {
 			return;
 		}
 
-		currentlyInMotion = true;
-		ServoController.setBodySpeed(100);
+		FootPosition oldLeftFront = legLeftFront.getFootPosition();
+		FootPosition oldLeftMiddle = legLeftMiddle.getFootPosition();
+		FootPosition oldLeftRear = legLeftRear.getFootPosition();
+		FootPosition oldRightFront = legRightFront.getFootPosition();
+		FootPosition oldRightMiddle = legRightMiddle.getFootPosition();
+		FootPosition oldRightRead = legRightRear.getFootPosition();
 
-		System.out.println("turnLeft - start");
-//		while (Status.getBodyMovementType() == BodyMovementType.TURN_LEFT) {
-		System.out.println("clockwise");
-		for (int i = 0; i <= 10; i += 1) {
-//			rotationByAngle(true, 1, legLeftFront);
-//			rotationByAngle(true, 1, legRightFront);
-//			rotationByAngle(true, 1, legLeftRear);
-//			rotationByAngle(true, 1, legRightRear);
-			rotationByAngle(true, 1, legLeftMiddle);
-//			rotationByAngle(true, 1, legRightMiddle);
-			Thread.sleep(500);
+		for (int i = 0; i <= 4; i += 1) {
+			legLeftFront.setFootPosition(oldLeftFront.getX(), oldLeftFront.getY() - 5);
+			legLeftMiddle.setFootPosition(oldLeftMiddle.getX(), oldLeftMiddle.getY() - 5);
+			legLeftRear.setFootPosition(oldLeftRear.getX(), oldLeftRear.getY() - 5);
+			legRightFront.setFootPosition(oldRightFront.getX(), oldRightFront.getY() - 5);
+			legRightMiddle.setFootPosition(oldRightMiddle.getX(), oldRightMiddle.getY() - 5);
+			legRightRear.setFootPosition(oldRightRead.getX(), oldRightRead.getY() - 5);
+			Thread.sleep(20);
 		}
-		System.out.println("counter clockwise");
-		for (int i = 0; i <= 20; i += 1) {
-//			rotationByAngle(false, 1, legLeftFront);
-//			rotationByAngle(false, 1, legRightFront);
-//			rotationByAngle(false, 1, legLeftRear);
-//			rotationByAngle(false, 1, legRightRear);
-			rotationByAngle(false, 1, legLeftMiddle);
-//			rotationByAngle(false, 1, legRightMiddle);
-			Thread.sleep(500);
-		}
-		 System.out.println("clockwise");
-		for (int i = 0; i <= 10; i += 1) {
-//			rotationByAngle(true, 1, legLeftFront);
-//			rotationByAngle(true, 1, legRightFront);
-//			rotationByAngle(true, 1, legLeftRear);
-//			rotationByAngle(true, 1, legRightRear);
-			rotationByAngle(true, 1, legLeftMiddle);
-//			rotationByAngle(true, 1, legRightMiddle);
-			Thread.sleep(500);
-		}
-			Thread.sleep(2000);
-//			takeStartingPosition();
-			Thread.sleep(500);
-//		}
-		System.out.println("turnLeft - end");
+		Thread.sleep(200);
 
+		Status.setLookAroundMode(true);
+	};
+
+	public static Move disableLookAroundPosition = () -> {
+		if (!Status.isLookAroundMode()) {
+			return;
+		}
+
+		FootPosition oldLeftFront = legLeftFront.getFootPosition();
+		FootPosition oldLeftMiddle = legLeftMiddle.getFootPosition();
+		FootPosition oldLeftRear = legLeftRear.getFootPosition();
+		FootPosition oldRightFront = legRightFront.getFootPosition();
+		FootPosition oldRightMiddle = legRightMiddle.getFootPosition();
+		FootPosition oldRightRead = legRightRear.getFootPosition();
+
+		for (int i = 0; i <= 4; i += 1) {
+			legLeftFront.setFootPosition(oldLeftFront.getX(), oldLeftFront.getY() + 5);
+			legLeftMiddle.setFootPosition(oldLeftMiddle.getX(), oldLeftMiddle.getY() + 5);
+			legLeftRear.setFootPosition(oldLeftRear.getX(), oldLeftRear.getY() + 5);
+			legRightFront.setFootPosition(oldRightFront.getX(), oldRightFront.getY() + 5);
+			legRightMiddle.setFootPosition(oldRightMiddle.getX(), oldRightMiddle.getY() + 5);
+			legRightRear.setFootPosition(oldRightRead.getX(), oldRightRead.getY() + 5);
+			Thread.sleep(20);
+		}
+		Thread.sleep(200);
+
+		Status.setLookAroundMode(false);
+	};
+
+	private static Move riseRandomFoot = () -> {
+		Leg leg;
+		Integer random = new Random().nextInt(5);
+		switch (random) {
+		case 0:
+			leg = legLeftFront;
+			break;
+		case 1:
+			leg = legLeftMiddle;
+			break;
+		case 2:
+			leg = legLeftRear;
+			break;
+		case 3:
+			leg = legRightFront;
+			break;
+		case 4:
+			leg = legRightMiddle;
+			break;
+		default:
+			leg = legRightRear;
+			break;
+		}
+		leg.riseFoot();
+		Thread.sleep(200);
+		leg.lowerFoot();
+	};
+
+	public static void makeMove() throws InterruptedException {
+		if (!currentlyInMotion) {
+			switch (Status.getBodyMovementType()) {
+			case BACKWARD:
+				executeMove(moveBackward);
+				break;
+			case CROUCH:
+				executeMove(crouch);
+				break;
+			case FORWARD:
+				leftFactor = 1;
+				rightFactor = 1;
+				executeMove(moveForward);
+				break;
+			case HARD_LEFT:
+				leftFactor = 0.1;
+				rightFactor = 1;
+				executeMove(moveForward);
+				break;
+			case HARD_RIGHT:
+				leftFactor = 1;
+				rightFactor = 0.1;
+				executeMove(moveForward);
+				break;
+			case LEFT:
+				leftFactor = 0.4;
+				rightFactor = 1;
+				executeMove(moveForward);
+				break;
+			case RIGHT:
+				leftFactor = 1;
+				rightFactor = 0.4;
+				executeMove(moveForward);
+				break;
+			case RISE:
+				executeRise();;
+				break;
+			case SLIGHTLY_LEFT:
+				leftFactor = 0.7;
+				rightFactor = 1;
+				executeMove(moveForward);
+				break;
+			case SLIGHTLY_RIGHT:
+				leftFactor = 1;
+				rightFactor = 0.7;
+				executeMove(moveForward);
+				break;
+			case STRAFE_LEFT:
+				executeMove(strafeLeft);
+				break;
+			case STRAFE_RIGHT:
+				executeMove(strafeRight);
+				break;
+			case TURN_LEFT:
+				executeMove(turnLeft);
+				break;
+			case TURN_RIGHT:
+				executeMove(turnRight);
+				break;
+			default:
+				break;
+			}
+		}
+	}
+
+	public static void executeMove(Move move) {
+		try {
+			if (!isMovementPossible()) {
+				return;
+			}
+			currentlyInMotion = true;
+			move.execute();
+		} catch (InterruptedException | BodyMovementException e) {
+			e.printStackTrace();
+		}
 		currentlyInMotion = false;
 	}
 
-	private static void rotationByAngle(boolean clockwise, double angle, Leg leg) {
+	public static void executeRise() {
+		try {
+			if (currentlyInMotion) {
+				return;
+			}
+			if (!Status.isSleepMode()) {
+				return;
+			}
+			currentlyInMotion = true;
+			rise.execute();
+		} catch (InterruptedException | BodyMovementException e) {
+			e.printStackTrace();
+		}
+		currentlyInMotion = false;
+	}
+
+	private static void rotationByAngle(boolean clockwise, double angle, Leg leg) throws BodyMovementException {
 		FootPosition footPosition = leg.getFootPosition();
 		double X = footPosition.getX();
 		double Y = footPosition.getY();
-		
+
 		if (angle <= 0) {
 			return;
 		}
 		FootPosition newFootPosition = null;
 		if (leg.getLocation() == LegLocation.LEFT_FRONT) {
 			if (clockwise) {
-				newFootPosition = calculateForTurn(angle, X, Y, true);
+				newFootPosition = calculateForTurnOutsideLeg(angle, X, Y, true);
 			} else {
-				newFootPosition = calculateForTurn(angle, X, Y, false);
+				newFootPosition = calculateForTurnOutsideLeg(angle, X, Y, false);
 			}
 		}
 		if (leg.getLocation() == LegLocation.RIGHT_FRONT) {
 			if (clockwise) {
-				newFootPosition = calculateForTurn(angle, X, Y, false);
+				newFootPosition = calculateForTurnOutsideLeg(angle, X, Y, false);
 			} else {
-				newFootPosition = calculateForTurn(angle, X, Y, true);
+				newFootPosition = calculateForTurnOutsideLeg(angle, X, Y, true);
 			}
 		}
 		if (leg.getLocation() == LegLocation.LEFT_REAR) {
 			if (clockwise) {
-				newFootPosition = calculateForTurn(angle, X, -Y, false);
+				newFootPosition = calculateForTurnOutsideLeg(angle, X, -Y, false);
 				newFootPosition.setY(-newFootPosition.getY());
 			} else {
-				newFootPosition = calculateForTurn(angle, X, -Y, true);
+				newFootPosition = calculateForTurnOutsideLeg(angle, X, -Y, true);
 				newFootPosition.setY(-newFootPosition.getY());
 			}
 		}
 		if (leg.getLocation() == LegLocation.RIGHT_REAR) {
 			if (clockwise) {
-				newFootPosition = calculateForTurn(angle, X, -Y, true);
+				newFootPosition = calculateForTurnOutsideLeg(angle, X, -Y, true);
 				newFootPosition.setY(-newFootPosition.getY());
 			} else {
-				newFootPosition = calculateForTurn(angle, X, -Y, false);
+				newFootPosition = calculateForTurnOutsideLeg(angle, X, -Y, false);
 				newFootPosition.setY(-newFootPosition.getY());
 			}
 		}
 		if (leg.getLocation() == LegLocation.LEFT_MIDDLE) {
 			if (clockwise) {
-				newFootPosition = calculateForTurn2(angle, X, Y, true);
+				newFootPosition = calculateForTurnInsideLeg(angle, X, Y, true);
 			} else {
-				newFootPosition = calculateForTurn2(angle, X, Y, false);
+				newFootPosition = calculateForTurnInsideLeg(angle, X, Y, false);
 			}
 		}
 		if (leg.getLocation() == LegLocation.RIGHT_MIDDLE) {
 			if (clockwise) {
-				newFootPosition = calculateForTurn2(angle, X, -Y, true);
-				newFootPosition.setY(newFootPosition.getY());
+				newFootPosition = calculateForTurnInsideLeg(angle, X, Y, false);
 			} else {
-				newFootPosition = calculateForTurn2(angle, X, -Y, false);
-				newFootPosition.setY(newFootPosition.getY());
+				newFootPosition = calculateForTurnInsideLeg(angle, X, Y, true);
 			}
 		}
 		leg.setFootPosition(newFootPosition.getX(), newFootPosition.getY());
 	}
 
-	private static double toRadians(double angle){
-		return angle * Math.PI / 180;
+	public static void makeRandomMove() throws InterruptedException {
+		Integer random = new Random().nextInt(2);
+		switch (random) {
+		case 0:
+			executeMove(stepInPlace);
+			break;
+		case 1:
+			executeMove(riseRandomFoot);
+			break;
+		}
 	}
 
-	private static boolean isMovementPossible() {
+	private static boolean isMovementPossible() throws InterruptedException {
 		if (currentlyInMotion) {
-			System.out.println("in motion");
 			return false;
 		}
 		if (Status.isSleepMode()) {
@@ -678,22 +820,18 @@ public class BodyMovement {
 		movementTypes.add(BodyMovementType.SLIGHTLY_RIGHT);
 		return movementTypes.contains(Status.getBodyMovementType()) ? true : false;
 	}
-//	public static void waitTillEndOfMove() {
-//		try {
-//			int i = 0;
-//			while (i < 4) {
-//				System.out.print(".");
-//				if (ServoController.getMovingState() == 0) {
-//					i++;
-//				}
-//				Thread.sleep(20);
-//			}
-//			
-//		} catch (InterruptedException e) {
-//			e.printStackTrace();
-//		}
-//		System.out.println(" end");
-//	}
+
+	private static void riseFoots(Leg... legs) throws InterruptedException, BodyMovementException {
+		for (Leg leg : legs) {
+			leg.riseFoot();
+		}
+	}
+
+	private static void lowerFoots(Leg... legs) throws InterruptedException, BodyMovementException {
+		for (Leg leg : legs) {
+			leg.lowerFoot();
+		}
+	}
 
 	public static int getStepHeight() {
 		return STEP_HEIGHT;
