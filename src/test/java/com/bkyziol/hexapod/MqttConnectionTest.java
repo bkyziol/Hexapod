@@ -28,8 +28,8 @@ public class MqttConnectionTest {
 	public void test() throws Exception {
 		System.out.println(System.getProperty("user.dir"));
 		KeyStorePasswordPair pair = AwsIotUtil.getKeyStorePasswordPair(
-				"./resources/4be29016ee-certificate.pem.crt",
-				"./resources/4be29016ee-private.pem.key"
+				"./resources/d6aee98257-certificate.pem.crt",
+				"./resources/d6aee98257-private.pem.key"
 			);
 		AWSIotMqttClient client = new AWSIotMqttClient(CLIENT_ENDPOINT, clientId, pair.keyStore, pair.keyPassword);
 		client.connect();
