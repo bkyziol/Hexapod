@@ -2,7 +2,6 @@ package com.bkyziol.hexapod.movement;
 
 import jssc.SerialPort;
 import jssc.SerialPortException;
-import jssc.SerialPortTimeoutException;
 
 public class ServoController {
 
@@ -85,18 +84,6 @@ public class ServoController {
 			}
 		} catch (SerialPortException e) {
 			System.out.println("Error while setting the servo speed of hexapod body: " + e);
-		}
-	}
-
-	public static int getMovingState() {
-		try {
-			byte[] command = { (byte) 0x93, (byte) 0x93 };
-			byte[] response = new byte[2];
-			serialPort.writeBytes(command);
-			response = serialPort.readBytes(2, 100);
-			return response[0];
-		} catch (SerialPortTimeoutException | SerialPortException e) {
-			return 1;
 		}
 	}
 }
