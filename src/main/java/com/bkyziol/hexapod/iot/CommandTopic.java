@@ -41,11 +41,5 @@ public class CommandTopic extends AWSIotTopic {
 		if (commandMessagePayload.isStatusReportNeeded()) {
 			Status.sendStatusMessage();
 		}
-
-		System.out.println("------------------------------------------");
-		System.out.println("BODY: " + bodyMovement);
-		System.out.println("HEAD: " + headMovement );
-		System.out.println("CAMERA: " + commandMessagePayload.isCameraEnabled());
-		System.out.println("FACE DETECTION: " + commandMessagePayload.isFaceDetectionEnabled());
 	}
 }

@@ -26,10 +26,14 @@ public abstract class Servo {
 	}
 
 	public void setValue(int value) {
-		if (value < this.max && value > this.min) {
+		if (value > this.max) {
+			this.current = this.max;
+		} else if (value < this.min) {
+			this.current = this.min;
+		} else {
 			this.current = value;
-			ServoController.setTarget(this.channel, this.current);
 		}
+		ServoController.setTarget(this.channel, this.current);
 	}
 
 	public int getCurrent() {
