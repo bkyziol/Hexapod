@@ -2,7 +2,11 @@ package com.bkyziol.hexapod.camera;
 
 import org.opencv.core.Rect;
 
+import com.bkyziol.hexapod.movement.BodyMovement;
 import com.bkyziol.hexapod.movement.Head;
+import com.bkyziol.hexapod.movement.HeadServo;
+import com.bkyziol.hexapod.movement.Status;
+
 import static com.bkyziol.hexapod.utils.Constants.*;
 
 public class FaceTracking {
@@ -35,24 +39,44 @@ public class FaceTracking {
 		}
 	}
 
-	public void lookAt() {
+	public void lookAt() throws InterruptedException {
 		FacePosition closestFace = getClosestFaceCoordinates();
+
+		HeadServo horizontalServo = Head.getHorizontalServo();
+		HeadServo verticalServo = Head.getVerticalServo();
+
 		if (closestFace != null) {
+			Status.setLastFaceDetectedTimestamp(System.currentTimeMillis());
 			double leftMargin = closestFace.getX1();
 			double rightMargin = FRAME_WIDTH - closestFace.getX2();
+			double upMargin = closestFace.getY1();
+			double downMargin = FRAME_HEIGTH - closestFace.getY2();
+
 			if (leftMargin - 100 > rightMargin) {
 				int value = (int) (leftMargin - rightMargin) * 4;
-				Head.getHorizontalServo().increaseAngle(value);
-				System.out.println("turn right: " + (leftMargin - rightMargin));
+				horizontalServo.increaseAngle(value);
 			} else if (rightMargin - 100 > leftMargin) {
 				int value = (int) (rightMargin - leftMargin) * 4;
-				Head.getHorizontalServo().decreaseAngle(value);
-				System.out.println("turn left: " + (rightMargin - leftMargin));
-			} else {
-				System.out.println("is centered: " + (rightMargin - leftMargin));
+				horizontalServo.decreaseAngle(value);
+			}
+			if (upMargin - 100 > downMargin) {
+				int value = (int) (upMargin - downMargin) * 4;
+				verticalServo.increaseAngle(value);
+			} else if (downMargin - 100 > upMargin) {
+				int value = (int) (downMargin - upMargin) * 4;
+				verticalServo.decreaseAngle(value);
+			}
+			if (horizontalServo.getCurrent() < horizontalServo.getMin() + 100) {
+				BodyMovement.executeMove(BodyMovement.lookLeft);
+			}
+			if (horizontalServo.getCurrent() > horizontalServo.getMax() - 100) {
+				BodyMovement.executeMove(BodyMovement.lookRight);
 			}
 		} else {
-			System.out.println("no face detected");
+			if (Status.getLastFaceDetectedTimestamp() + 2000 < System.currentTimeMillis()) {
+				verticalServo.setValue(5000);
+				horizontalServo.setValue(horizontalServo.getCenter());
+			}
 		}
 	}
 }

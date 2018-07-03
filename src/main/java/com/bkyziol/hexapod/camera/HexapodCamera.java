@@ -43,7 +43,7 @@ public final class HexapodCamera {
 	}
 
 	public HexapodCamera(String opencvLibFile, String haarcascadesPath) {
-		this.faceCascade.load(haarcascadesPath + "/haarcascade_frontalface_alt.xml");
+		this.faceCascade.load(haarcascadesPath + "/haarcascade_frontalface_alt2.xml");
 		if (System.getProperty("os.arch").equals("arm")) {
 			needToRotate = true;
 		} else {
