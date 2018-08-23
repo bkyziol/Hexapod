@@ -16,6 +16,7 @@ public class Status {
 	private static long nextRandomMoveTimestamp;
 	private static int bodySpeed;
 	private static int headSpeed;
+	private static int strideLength;
 
 	public static void sendStatusMessage() {
 		if (connection == null || !connection.isConnected()) {
@@ -117,5 +118,13 @@ public class Status {
 
 	public static void setHeadSpeed(int headSpeed) {
 		Status.headSpeed = headSpeed;
+	}
+
+	public static int getStrideLength() {
+		return strideLength;
+	}
+
+	public static void setStrideLength(int strideLength) {
+		Status.strideLength = strideLength;
 	}
 }

@@ -24,6 +24,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import static com.bkyziol.hexapod.movement.BodyMovement.*;
+
 public class Main {
 
 	private static ScheduledExecutorService sendFramesTimer;
@@ -56,7 +58,7 @@ public class Main {
 		connection = connectionBuilder.build();
 		connection.connect();
 		Status.setConnection(connection);
-		BodyMovement.executeMove(BodyMovement.initPosition);
+		executeMove(() -> true, initPosition);
 		startCameraTimer();
 		startMovementTimer();
 	}

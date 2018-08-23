@@ -2,16 +2,17 @@ package com.bkyziol.hexapod.camera;
 
 import org.opencv.core.Rect;
 
-import com.bkyziol.hexapod.movement.BodyMovement;
 import com.bkyziol.hexapod.movement.Head;
 import com.bkyziol.hexapod.movement.HeadServo;
 import com.bkyziol.hexapod.movement.Status;
 
 import static com.bkyziol.hexapod.utils.Constants.*;
+import static com.bkyziol.hexapod.movement.BodyMovement.*;
 
 public class FaceTracking {
 
 	private final HexapodCamera camera;
+	private int dAngle = 500;
 
 	public FaceTracking(HexapodCamera camera) {
 		this.camera = camera;
@@ -67,15 +68,21 @@ public class FaceTracking {
 				verticalServo.decreaseAngle(value);
 			}
 			if (horizontalServo.getCurrent() < horizontalServo.getMin() + 100) {
-				BodyMovement.executeMove(BodyMovement.lookLeft);
+				executeMove(isMovementPossible, lookLeft);
 			}
 			if (horizontalServo.getCurrent() > horizontalServo.getMax() - 100) {
-				BodyMovement.executeMove(BodyMovement.lookRight);
+				executeMove(isMovementPossible, lookRight);
 			}
 		} else {
 			if (Status.getLastFaceDetectedTimestamp() + 2000 < System.currentTimeMillis()) {
+				if (horizontalServo.getCurrent() <= horizontalServo.getMin()) {
+					dAngle = 500;
+				}
+				if (horizontalServo.getCurrent() >= horizontalServo.getMax()) {
+					dAngle = -500;
+				}
 				verticalServo.setValue(5000);
-				horizontalServo.setValue(horizontalServo.getCenter());
+				horizontalServo.increaseAngle(dAngle);
 			}
 		}
 	}

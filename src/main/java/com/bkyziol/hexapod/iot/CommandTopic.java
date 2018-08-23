@@ -32,6 +32,7 @@ public class CommandTopic extends AWSIotTopic {
 
 		Status.setBodyMovementType(BodyMovementType.valueOf(bodyMovement));
 		Status.setHeadMovementType(HeadMovementType.valueOf(headMovement));
+		Status.setStrideLength(commandMessagePayload.getStrideLength());
 
 		CameraSettings.setCameraEnabled(commandMessagePayload.isCameraEnabled());
 		CameraSettings.setFaceDetectionEnabled(commandMessagePayload.isFaceDetectionEnabled());
